@@ -1,0 +1,1812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shopepteez — business manager</title>
+<meta name="theme-color" content="#E5468A">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Shopepteez">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="application-name" content="Shopepteez">
+<meta name="description" content="Inventory, kits, orders, expenses and profit for your peptide shop.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFF8FB; --top:#FFE9F2; --surface:#FFFFFF; --surface2:#FFF1F6; --ink:#2A1822; --muted:#8E7482; --line:#F3DDE7;
+  --pink:#E5468A; --pink-600:#C9307A; --pink-400:#FF86B6; --pink-200:#FFC6DC; --pink-100:#FFE3EE; --pink-50:#FFF4F8;
+  --grad:linear-gradient(135deg,#FF93C1 0%,#F05A99 52%,#D63680 100%);
+  --nav:#2A1822; --nav-ink:#F7E9F0; --nav-muted:#BFA3B1; --chip:#F4E9EE;
+  --ok:#1C8E57; --ok-bg:#E1F5EA; --info:#3B63C9; --info-bg:#E8EEFC; --bad:#D63A33; --bad-bg:#FDE7E5;
+  --opt:#C46F08; --opt-bg:#FFF0DA; --warn:#8F5306; --warn-bg:#FFF3D8; --rest:#8E7A86; --rest-bg:#F3ECF0; --vio:#6B4FC7; --vio-bg:#EEE9FF;
+  --focus:#C9307A; --shadow:0 8px 24px rgba(201,48,122,.08); --side:236px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#170D13; --top:#24121C; --surface:#21151E; --surface2:#2B1B26; --ink:#FBEFF5; --muted:#C2A6B5; --line:#3A2432;
+  --pink:#FF6FA9; --pink-600:#FF8DBD; --pink-400:#FF9CC5; --pink-200:#5A2640; --pink-100:#3B1D2D; --pink-50:#28151F;
+  --grad:linear-gradient(135deg,#FF7FB4 0%,#E84A8C 55%,#BC2A6B 100%);
+  --nav:#0F080C; --chip:#33222C;
+  --ok:#52D695; --ok-bg:#133226; --info:#8AB0FF; --info-bg:#1A2745; --bad:#FF8A82; --bad-bg:#3D1A19;
+  --opt:#F7B062; --opt-bg:#3B2811; --warn:#F2C063; --warn-bg:#352A10; --rest:#A8939F; --rest-bg:#2E2229; --vio:#B4A2FF; --vio-bg:#2A2342; --focus:#FF8DBD; --shadow:0 1px 2px rgba(0,0,0,.4);
+}}
+:root[data-theme="dark"]{
+  --bg:#170D13; --top:#24121C; --surface:#21151E; --surface2:#2B1B26; --ink:#FBEFF5; --muted:#C2A6B5; --line:#3A2432;
+  --pink:#FF6FA9; --pink-600:#FF8DBD; --pink-400:#FF9CC5; --pink-200:#5A2640; --pink-100:#3B1D2D; --pink-50:#28151F;
+  --grad:linear-gradient(135deg,#FF7FB4 0%,#E84A8C 55%,#BC2A6B 100%);
+  --nav:#0F080C; --chip:#33222C;
+  --ok:#52D695; --ok-bg:#133226; --info:#8AB0FF; --info-bg:#1A2745; --bad:#FF8A82; --bad-bg:#3D1A19;
+  --opt:#F7B062; --opt-bg:#3B2811; --warn:#F2C063; --warn-bg:#352A10; --rest:#A8939F; --rest-bg:#2E2229; --vio:#B4A2FF; --vio-bg:#2A2342; --focus:#FF8DBD; --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;color:var(--ink);font:15px/1.5 Outfit,"Avenir Next",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;
+  background:linear-gradient(180deg,var(--top) 0,var(--bg) 320px) no-repeat,var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+button,.click,label{touch-action:manipulation}
+@media (max-width:760px){ input[type=text],input[type=number],input[type=date],input[type=search],input[type=tel],input[type=email],select,textarea,.search input{font-size:16px} }
+@media (display-mode: standalone){ body{overscroll-behavior-y:none} }
+button{cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h1,h2,h3,h4{margin:0;line-height:1.2;font-weight:600}
+p{margin:0}
+a{color:var(--pink-600)}
+/* shell */
+.side{position:fixed;left:0;top:0;bottom:0;width:var(--side);background:var(--nav);color:var(--nav-ink);padding:calc(18px + env(safe-area-inset-top,0px)) 12px 18px;display:flex;flex-direction:column;gap:2px;z-index:30;overflow-y:auto}
+.brand{display:flex;gap:10px;align-items:center;padding:4px 10px 18px}
+.brand .lg{width:34px;height:34px;border-radius:11px;background:var(--grad);display:grid;place-items:center;color:#fff;flex:none}
+.brand .lg svg{width:18px;height:18px}
+.brand b{display:block;font-size:16px;font-weight:600;line-height:1.2}
+.brand span{font-size:12px;color:var(--nav-muted)}
+.side .nv{display:flex;align-items:center;gap:11px;border:0;background:none;color:var(--nav-ink);opacity:.78;padding:10px 12px;border-radius:12px;font-weight:500;font-size:14.5px;text-align:left;width:100%}
+.side .nv svg{width:19px;height:19px;flex:none}
+.side .nv:hover{opacity:1;background:rgba(255,255,255,.06)}
+.side .nv[aria-current="page"]{background:var(--pink);color:#fff;opacity:1}
+.side .nv .cnt{margin-left:auto;font-size:11.5px;background:rgba(255,255,255,.14);border-radius:999px;padding:1px 8px}
+.side .grp{font-size:12px;color:var(--nav-muted);padding:16px 12px 6px}
+.side .me{margin-top:auto;padding:12px;border-radius:14px;background:rgba(255,255,255,.06);font-size:13px}
+.side .me b{display:block;font-weight:600}
+.side .me span{color:var(--nav-muted)}
+.wrap{margin-left:var(--side);min-height:100vh}
+main{max-width:1240px;margin:0 auto;padding:22px 28px 60px}
+.mtop{display:none}
+.dock{display:none}
+@media (max-width:900px){
+  .side{display:none}
+  .wrap{margin-left:0}
+  main{padding:14px 16px 120px}
+  .mtop{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px 0}
+  .mtop .brand{padding:0}
+  .mtop .brand span{color:var(--muted)}
+  .dock{display:flex;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));background:var(--nav);border-radius:999px;padding:6px;gap:2px;z-index:40;box-shadow:0 16px 40px rgba(42,24,34,.35);max-width:calc(100% - 20px)}
+  .dock button{border:0;background:none;color:#fff;opacity:.72;height:48px;min-width:48px;padding:0 12px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:7px;font-weight:500;font-size:13.5px}
+  .dock button svg{width:21px;height:21px;flex:none}
+  .dock button span{display:none}
+  .dock button[aria-current="page"]{background:var(--pink-100);color:var(--pink-600);opacity:1;padding:0 15px}
+  .dock button[aria-current="page"] span{display:inline;white-space:nowrap}
+}
+/* page header */
+.ph{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin:6px 0 18px}
+.ph h1{font-size:28px;letter-spacing:-.01em}
+.ph p{color:var(--muted);margin-top:4px;font-size:14px}
+.ph .acts{display:flex;gap:8px;flex-wrap:wrap}
+.sec{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:26px 0 12px}
+.sec h2{font-size:18px}
+.sec .lnk,.lnk{border:0;background:none;color:var(--pink-600);font-weight:600;font-size:14px;padding:4px}
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:0;background:var(--chip);padding:10px 16px;border-radius:999px;font-weight:500;line-height:1.2;white-space:nowrap;color:var(--ink);font-size:14.5px}
+.btn:hover{filter:brightness(.97)}
+.btn.primary{background:var(--grad);color:#fff;box-shadow:0 8px 20px rgba(214,54,128,.22)}
+.btn.dark{background:var(--nav);color:#fff}
+.btn.ok{background:var(--ok);color:#fff}
+.btn.danger{color:var(--bad);background:var(--bad-bg)}
+.btn.ghost{background:var(--surface);box-shadow:0 2px 10px rgba(201,48,122,.06)}
+.btn.sm{padding:7px 13px;font-size:13px}
+.btn svg{width:16px;height:16px;flex:none}
+.icon-btn{border:0;background:none;padding:8px;border-radius:50%;color:var(--muted);display:inline-grid;place-items:center}
+.icon-btn:hover{background:var(--surface2);color:var(--ink)}
+.icon-btn svg{width:18px;height:18px}
+.round{width:42px;height:42px;border-radius:50%;border:0;background:var(--surface);display:grid;place-items:center;padding:0;box-shadow:0 4px 14px rgba(201,48,122,.08);flex:none}
+.round svg{width:19px;height:19px}
+/* quick actions */
+.qa{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px}
+.qa button{border:0;border-radius:18px;background:var(--surface);padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:500;font-size:13px;color:var(--ink);box-shadow:var(--shadow);text-align:center;line-height:1.25}
+.qa button .qi{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--pink-100);color:var(--pink-600)}
+.qa button .qi svg{width:19px;height:19px}
+.qa button.main .qi{background:var(--grad);color:#fff}
+@media (max-width:1100px){ .qa{grid-template-columns:repeat(4,minmax(0,1fr))} }
+@media (max-width:520px){ .qa{grid-template-columns:repeat(3,minmax(0,1fr))} .qa button:last-child{display:none} }
+/* cards */
+.card{background:var(--surface);border-radius:22px;padding:18px 20px;box-shadow:var(--shadow)}
+.card-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.card-h h2,.card-h h3{font-size:16.5px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:520px){ .kpis{grid-template-columns:repeat(2,minmax(0,1fr))} .kpis.k3{grid-template-columns:repeat(2,minmax(0,1fr))} .kpi b{font-size:19px} }
+.kpi{background:var(--surface);border-radius:20px;padding:15px 16px;box-shadow:var(--shadow);border:0;text-align:left;color:var(--ink);width:100%}
+button.kpi{cursor:pointer}
+.kpi span{display:block;font-size:12.5px;color:var(--muted)}
+.kpi b{display:block;font-size:22px;font-weight:600;line-height:1.25;margin-top:2px;letter-spacing:-.01em}
+.kpi small{font-size:12px;color:var(--muted)}
+.kpi.hl{background:var(--grad);color:#fff}
+.kpi.hl span,.kpi.hl small{color:rgba(255,255,255,.88)}
+.grid2{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1050px){ .grid2{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)} }
+.grid3{display:grid;gap:12px;grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:640px){ .grid3{grid-template-columns:1fr} }
+/* waterfall */
+.flow{display:flex;flex-direction:column;gap:6px}
+.flow .st{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-radius:14px;background:var(--surface2)}
+.flow .st span{font-size:14px}
+.flow .st span small{display:block;font-size:12px;color:var(--muted)}
+.flow .st b{font-weight:600;font-size:16px;white-space:nowrap}
+.flow .st.sub b{color:var(--muted);font-weight:500}
+.flow .st.tot{background:var(--pink-100)}
+.flow .st.net{background:var(--grad);color:#fff}
+.flow .st.net small{color:rgba(255,255,255,.85)}
+.flow .ar{text-align:center;color:var(--muted);font-size:12px;line-height:1}
+/* chips */
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;flex-wrap:nowrap}
+.chips::-webkit-scrollbar{display:none}
+.chips button{border:0;background:var(--chip);color:var(--ink);border-radius:999px;padding:8px 15px;font-weight:500;font-size:13.5px;white-space:nowrap;flex:none}
+.chips button[aria-pressed="true"]{background:var(--nav);color:#fff}
+.chips button .n{display:inline-grid;place-items:center;min-width:19px;height:19px;border-radius:10px;background:var(--pink);color:#fff;font-size:11px;margin-left:6px;padding:0 5px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap;background:var(--surface2);color:var(--ink);line-height:1.5}
+.chip i{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.c-ok{background:var(--ok-bg);color:var(--ok)} .c-info{background:var(--info-bg);color:var(--info)} .c-bad{background:var(--bad-bg);color:var(--bad)}
+.c-opt{background:var(--opt-bg);color:var(--opt)} .c-warn{background:var(--warn-bg);color:var(--warn)} .c-rest{background:var(--rest-bg);color:var(--rest)}
+.c-pink{background:var(--pink-100);color:var(--pink-600)} .c-vio{background:var(--vio-bg);color:var(--vio)}
+.muted{color:var(--muted)} .small{font-size:13px} .xs{font-size:12px} .r{text-align:right} .b{font-weight:600}
+.row{display:flex;align-items:center;gap:10px} .between{justify-content:space-between} .wr{flex-wrap:wrap}
+.pos{color:var(--ok)} .neg{color:var(--bad)}
+/* toolbar */
+.tb{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.tb .search{flex:1;min-width:200px}
+.search{display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:999px;padding:0 16px;height:44px;box-shadow:0 2px 10px rgba(201,48,122,.05)}
+.search svg{width:18px;height:18px;color:var(--muted);flex:none}
+.search input{border:0;background:none;outline:none;flex:1;font-size:15px;min-width:0;padding:0}
+/* tables */
+.tbl-wrap{overflow-x:auto;border-radius:18px;background:var(--surface);box-shadow:var(--shadow)}
+table.t{border-collapse:collapse;width:100%;font-size:14px}
+table.t th{text-align:left;font-size:12px;color:var(--muted);font-weight:500;padding:11px 12px;background:var(--surface2);white-space:nowrap;position:sticky;top:0}
+table.t td{padding:11px 12px;border-top:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+table.t .num{text-align:right}
+table.t tr.click{cursor:pointer}
+table.t tr.click:hover td{background:var(--pink-50)}
+table.t tr.void td{color:var(--muted);text-decoration:line-through}
+table.t tr.void td .chip{text-decoration:none}
+table.t tfoot td{font-weight:600;background:var(--surface2)}
+table.t td.wrapc{white-space:normal;min-width:180px}
+table.t .nm{font-weight:600}
+table.t .sub{font-size:12px;color:var(--muted);white-space:normal}
+.tbl-wrap.flat{box-shadow:none;border:1px solid var(--line)}
+/* lists */
+.att{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:16px;margin-bottom:8px;border:0;width:100%;text-align:left;color:var(--ink);cursor:pointer}
+.att .ai{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--surface)}
+.att .ai svg{width:15px;height:15px}
+.att b{display:block;font-weight:600;font-size:14px}
+.att span{font-size:13px;color:var(--muted)}
+.att.bad{background:var(--bad-bg)} .att.bad .ai{color:var(--bad)}
+.att.warn{background:var(--warn-bg)} .att.warn .ai{color:var(--warn)}
+.att.info{background:var(--info-bg)} .att.info .ai{color:var(--info)}
+.att.pink{background:var(--pink-100)} .att.pink .ai{color:var(--pink-600)}
+.health{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.health button{border:0;border-radius:16px;padding:12px;text-align:left;color:var(--ink)}
+.health b{display:block;font-size:24px;font-weight:600;line-height:1.1}
+.health span{font-size:12.5px}
+.hb-bad{background:var(--bad-bg)} .hb-bad b{color:var(--bad)}
+.hb-warn{background:var(--opt-bg)} .hb-warn b{color:var(--opt)}
+.hb-ok{background:var(--ok-bg)} .hb-ok b{color:var(--ok)}
+.chart{width:100%;height:auto;display:block}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.bar{height:8px;border-radius:99px;background:var(--surface2);overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--grad)}
+.empty{text-align:center;padding:34px 16px;color:var(--muted)}
+.empty h3{color:var(--ink);font-size:18px;margin-bottom:6px}
+.empty .btn{margin-top:14px}
+.hlp{padding:12px 16px;border-radius:16px;background:var(--pink-50);font-size:13.5px;color:var(--muted);border-left:4px solid var(--pink);margin-bottom:14px}
+.banner{padding:12px 16px;border-radius:16px;background:var(--warn-bg);color:var(--warn);font-size:14px;margin-bottom:14px}
+.banner.bad{background:var(--bad-bg);color:var(--bad)}
+.banner.ok{background:var(--ok-bg);color:var(--ok)}
+.banner.info{background:var(--info-bg);color:var(--info)}
+.banner b{font-weight:600}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:14px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:500;text-align:right;min-width:0;overflow-wrap:anywhere}
+.mini{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.mini div{padding:11px 13px;border-radius:16px;background:var(--surface2)}
+.mini span{display:block;font-size:12px;color:var(--muted)}
+.mini b{font-size:16px;font-weight:600}
+/* modal */
+.scrim{position:fixed;inset:0;background:rgba(42,24,34,.45);display:none;z-index:50;padding:24px}
+.scrim.open{display:flex;align-items:center;justify-content:center}
+.modal{background:var(--bg);border-radius:28px;width:min(820px,100%);max-height:calc(100vh - 48px);overflow:auto;box-shadow:0 30px 80px rgba(42,24,34,.35);overscroll-behavior:contain}
+.modal.narrow{width:min(520px,100%)}
+.modal.wide{width:min(1000px,100%)}
+.m-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 22px 10px;position:sticky;top:0;background:var(--bg);z-index:3}
+.m-head h2{font-size:20px}
+.m-head .sub{font-size:13px;color:var(--muted);margin-top:2px}
+.m-head .icon-btn{background:var(--surface);width:38px;height:38px;flex:none}
+.m-body{padding:6px 22px 22px}
+.m-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 22px 16px;position:sticky;bottom:0;background:var(--bg);flex-wrap:wrap;z-index:3;box-shadow:0 -8px 20px var(--bg)}
+.m-foot .rt{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+/* forms */
+fieldset{border:0;padding:0;margin:0 0 18px}
+legend{font-weight:600;font-size:15.5px;margin-bottom:10px;padding:0}
+.fg{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.fg .full{grid-column:1/-1}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:500;color:var(--muted)}
+label.f em{font-style:normal;color:var(--bad)}
+label.cb{display:flex;gap:9px;align-items:flex-start;font-size:14px;font-weight:500}
+input[type=checkbox]{accent-color:var(--pink);width:18px;height:18px;flex:none;margin:1px 0 0}
+input[type=text],input[type=number],input[type=date],input[type=search],input[type=tel],input[type=email],select,textarea{width:100%;padding:11px 13px;border-radius:14px;border:1.5px solid transparent;background:var(--surface);color:var(--ink);font-size:15px;min-width:0}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--pink-400)}
+input[readonly]{background:var(--surface2);color:var(--muted)}
+textarea{min-height:70px;resize:vertical;line-height:1.45}
+.hint{font-size:12.5px;color:var(--muted);margin-top:6px}
+.seg{display:inline-flex;border-radius:999px;background:var(--chip);padding:4px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:none;padding:7px 14px;font-weight:500;color:var(--muted);border-radius:999px;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--nav);color:#fff}
+.lines .ln{display:grid;gap:8px;align-items:end;padding:10px;border-radius:16px;background:var(--pink-50);margin-bottom:8px}
+.lines .ln label.f{font-size:11.5px}
+.ln-comp{grid-template-columns:minmax(0,2.4fr) 90px 110px 110px auto}
+.ln-pur{grid-template-columns:minmax(0,2.2fr) 80px 110px 110px auto}
+.ln-pur .x2{grid-column:span 2}
+.ln-pur .newi{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,2fr) 1fr 1fr;gap:8px}
+@media (max-width:700px){
+  .ln-comp{grid-template-columns:1fr 1fr auto} .ln-comp .sel{grid-column:1/-1}
+  .ln-pur{grid-template-columns:1fr 1fr auto} .ln-pur .sel{grid-column:1/-1} .ln-pur .x2{grid-column:span 1}
+  .ln-pur .newi{grid-template-columns:1fr 1fr} .ln-pur .newi label:first-child{grid-column:1/-1}
+}
+.preview{padding:14px 16px;border-radius:18px;background:var(--pink-100);font-size:14px}
+.warnbox{margin-top:10px;padding:10px 14px;border-radius:14px;background:var(--warn-bg);color:var(--warn);font-size:13.5px}
+.warnbox.bad{background:var(--bad-bg);color:var(--bad)}
+.warnbox b{font-weight:600}
+/* wizard */
+.steps{display:flex;gap:6px;margin:0 0 6px}
+.steps span{flex:1;height:6px;border-radius:9px;background:var(--pink-100)}
+.steps span.on{background:var(--grad)}
+.step-t{font-size:12.5px;font-weight:500;color:var(--pink-600);margin-bottom:12px}
+.pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.pick button{border:2px solid transparent;background:var(--surface);border-radius:18px;padding:13px 14px;text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:3px;box-shadow:0 2px 10px rgba(201,48,122,.05)}
+.pick button[aria-pressed="true"]{border-color:var(--pink)}
+.pick button b{font-weight:600}
+.pick button span{font-size:12.5px;color:var(--muted)}
+.cart input[type=number]{background:var(--surface2)}
+.cart .ci{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:12px;border-radius:16px;background:var(--surface);margin-bottom:8px}
+.qty{display:inline-flex;align-items:center;background:var(--surface2);border-radius:999px}
+.qty button{border:0;background:none;width:34px;height:34px;border-radius:50%;font-size:18px;font-weight:600;color:var(--ink)}
+.qty input{width:52px;text-align:center;padding:6px 2px;border-radius:10px;background:transparent}
+.check{list-style:none;padding:0;margin:0;display:grid;gap:6px;font-size:13.5px}
+.check li{display:flex;gap:8px;align-items:center}
+.check li svg{width:16px;height:16px;color:var(--ok);flex:none}
+.toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(16px + env(safe-area-inset-top,0px));background:var(--nav);color:#fff;padding:11px 18px;border-radius:999px;font-weight:500;z-index:80;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:opacity .2s;max-width:calc(100% - 32px)}
+.sheet-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.sheet-nav button{border:0;background:var(--surface);border-radius:18px;padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:500;color:var(--ink);font-size:13.5px}
+.sheet-nav button svg{width:22px;height:22px;color:var(--pink-600)}
+.lock{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+.lock svg{width:14px;height:14px}
+@media (max-width:760px){ .scrim{padding:0;align-items:flex-end!important} .modal,.modal.narrow,.modal.wide{border-radius:26px 26px 0 0;max-height:94vh;width:100%} .m-head,.m-body,.m-foot{padding-left:16px;padding-right:16px} .pick{grid-template-columns:repeat(2,minmax(0,1fr))} .pick button{padding:10px 12px} .cart .ci{grid-template-columns:minmax(0,1fr) auto;} .cart .ci .icon-btn{grid-column:2;grid-row:1;justify-self:end} .cart .ci .qty{grid-column:1/-1;justify-self:start} }
+@media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
+@media print{ .side,.dock,.mtop,.acts,.tb,.chips{display:none!important} .wrap{margin:0} }
+</style>
+</head>
+<body>
+<aside class="side" id="side" aria-label="Sections"></aside>
+<div class="wrap">
+  <div class="mtop" id="mtop"></div>
+  <main id="main"><div class="empty"><h3>Loading your business…</h3></div></main>
+</div>
+<nav class="dock" id="dock" aria-label="Sections"></nav>
+<div class="scrim" id="scrim"><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
+<input type="file" id="fileIn" hidden>
+<script>
+/* =========================================================
+   Shopepteez — core
+   Purchases → Inventory ledger → Products/Kits → Sales → COGS → Profit
+   ========================================================= */
+const I = {
+  dash:'<rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/>',
+  bag:'<path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/>',
+  kit:'<path d="M4 8h16v12H4z"/><path d="M9 8V5h6v3M4 13h16"/>',
+  box:'<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
+  truck:'<path d="M3 6h11v10H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>',
+  receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
+  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3.2-5.5 6.5-5.5s6 2 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18.5 14.8c1.7.8 2.8 2.5 3 5.2"/>',
+  factory:'<path d="M3 21V10l6 3V10l6 3V6l6 3v12z"/><path d="M7 17h2M12 17h2M17 17h1"/>',
+  chart:'<path d="M4 20V4M4 20h16"/><path d="M8 16v-5M12 16V8M16 16v-3"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  minus:'<path d="M5 12h14"/>',
+  x:'<path d="M6 6l12 12M18 6L6 18"/>',
+  alert:'<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+  sliders:'<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+  check:'<path d="M5 12l4.5 4.5L19 7"/>',
+  more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+  coin:'<circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .8-3 2s1.3 1.7 3 2 3 .8 3 2-1.3 2-3 2c-1.4 0-2.5-.5-3-1.5M12 6.5v11"/>',
+  lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  vial:'<path d="M9 3h6M10 3v4l-4 11a2 2 0 0 0 2 3h8a2 2 0 0 0 2-3l-4-11V3"/><path d="M7.5 14h9"/>',
+  copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
+  dl:'<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
+  ledger:'<path d="M5 4h14v16H5z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+  clip:'<path d="M9 4h6v3H9z"/><path d="M7 5H5v16h14V5h-2"/><path d="M9 12l2 2 4-4"/>',
+};
+const ic = (n, sw=1.9) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]||''}</svg>`;
+
+/* ---------- helpers ---------- */
+const $ = (s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = (p='') => p + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4);
+const num = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
+const r2 = n => Math.round((n+Number.EPSILON)*100)/100;
+const r4 = n => Math.round(n*10000)/10000;
+const isoD = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const today = () => isoD(new Date());
+const parseD = s => { const [y,m,d]=String(s).split('-').map(Number); return new Date(y,(m||1)-1,d||1); };
+const addDays = (s,n) => isoD(new Date(parseD(s).getTime()+n*864e5));
+const daysTo = s => Math.round((parseD(s)-parseD(today()))/864e5);
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fd = s => { if(!s) return '—'; const d=parseD(s); return MON[d.getMonth()]+' '+d.getDate()+(d.getFullYear()!==new Date().getFullYear()?', '+d.getFullYear():''); };
+const fdt = t => { const d=new Date(t); return fd(isoD(d))+' '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); };
+const qf = q => { q=num(q); return Math.abs(q-Math.round(q))<1e-9 ? Math.round(q).toLocaleString('en-US') : (Math.round(q*100)/100).toLocaleString('en-US'); };
+const pct = x => x===null||!isFinite(x) ? '—' : (Math.round(x*1000)/10)+'%';
+function money(n, dec){
+  const c = cfg().currency || '₱'; n=num(n);
+  const neg = n < -0.004; n = Math.abs(n);
+  const d = dec ?? (Math.abs(n - Math.round(n)) > 0.004 ? 2 : 0);
+  return (neg?'−':'') + c + n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+}
+const hueOf = s => { let h=0; for(const c of String(s)) h=(h*31+c.charCodeAt(0))%360; return h; };
+function toast(msg){ $$('.toast').forEach(x=>x.remove()); const t=document.createElement('div'); t.className='toast'; t.setAttribute('role','status'); t.textContent=msg; document.body.appendChild(t); setTimeout(()=>{t.style.opacity='0'; setTimeout(()=>t.remove(),250)},2600); }
+const clone = o => JSON.parse(JSON.stringify(o));
+
+/* ---------- constants ---------- */
+const ITEM_TYPES=['Peptide','Bacwater','Packaging','Syringe','Supplies','Other'];
+const PROD_TYPES=['Set / Kit','Vial Only','Vial + Water','Add-on','Supply','Custom'];
+const PAY_STATUS=['Paid','Partially Paid','Unpaid','Refunded'];
+const ORDER_STATUS=['Pending','Processing','Packed','Shipped','Completed','Cancelled','Returned'];
+const CONFIRMED=new Set(['Processing','Packed','Shipped','Completed']);
+const ADJ_REASONS=['Damaged','Expired','Lost','Used internally','Freebie','Sample','Incorrect count','Returned to supplier','Manual correction','Other'];
+const DEFAULTS = {
+  business:{name:'',owner:'',phone:'',email:'',address:'',tin:''},
+  currency:'₱',
+  itemCategories:['Peptides','Bacteriostatic water','Packaging','Syringes & needles','Cleaning & swabs','Other supplies'],
+  expenseCategories:['Inventory purchases','Packaging','Shipping','Admin','Marketing','Advertising','Software','Bank/payment fees','Salaries','Supplies','Equipment','Miscellaneous'],
+  paymentMethods:['Cash','GCash','Bank Transfer','Other'],
+  units:['vial','pc','box','roll','pack','bottle','set'],
+  staffCanAdjust:false, staffCanPay:true, expiryWarnDays:90,
+};
+
+/* ---------- store ----------
+   Collections (one document per record, shared by everyone the app is shared with):
+   items, products, movements, orders, purchases, expenses, customers, suppliers, people, audit, settings
+*/
+const COLS=['items','products','movements','orders','purchases','expenses','customers','suppliers','people','audit','settings'];
+const D=Object.fromEntries(COLS.map(c=>[c,new Map()]));
+const S={mode:'local', db:null, user:null, uid:null, role:'admin', ready:false, ver:0, assets:null, loaded:new Set()};
+const LSK='shopdesk:v2:';
+const all = c => [...D[c].values()];
+const get = (c,id) => D[c].get(id);
+const cfg = () => Object.assign({}, DEFAULTS, get('settings','main')||{});
+const isAdmin = () => S.role==='admin';
+function lsLoad(){ for(const c of COLS){ try{ const a=JSON.parse(localStorage.getItem(LSK+c)||'null'); if(Array.isArray(a)) D[c]=new Map(a.map(x=>[x.id,x])); }catch(e){} } }
+function lsSave(c){ try{ localStorage.setItem(LSK+c, JSON.stringify(all(c))); }catch(e){} }
+async function put(c, obj){
+  obj = clone(obj); obj.updatedAt = Date.now();
+  D[c].set(obj.id, obj); S.ver++; lsSave(c);
+  if(S.db){
+    try{ await S.db.collection(c).doc(obj.id).set(obj); }
+    catch(e){ console.warn('write failed',c,e); toast(e?.code==='quota_exceeded'?'Storage is full. Export a backup in Settings.':e?.code==='invalid_argument'?'You don’t have permission to change this.':'Couldn’t save. Check your connection.'); throw e; }
+  }
+  return obj;
+}
+async function putMany(list){ for(const [c,o] of list) await put(c,o); }
+
+/* ---------- audit trail ---------- */
+async function audit(action, col, id, summary){
+  const m=today().slice(0,7), doc=clone(get('audit',m)||{id:m,entries:[]});
+  doc.entries.push({t:Date.now(), u:S.uid||'local', role:S.role, action, col, ref:id, summary});
+  if(doc.entries.length>3000) doc.entries=doc.entries.slice(-3000);
+  try{ await put('audit',doc); }catch(e){}
+}
+const personName = id => { if(!id||id==='local') return 'You'; const p=get('people',id); return (p&&p.name) || (id===S.uid?'You':'User '+String(id).slice(-4)); };
+
+/* ---------- ledger replay (single source of truth for quantity & cost) ---------- */
+let DV=null, DVver=-1;
+function dv(){ if(DVver===S.ver && DV) return DV; DV=derive(); DVver=S.ver; return DV; }
+function mvSort(a,b){ return a.date.localeCompare(b.date) || (a.created||0)-(b.created||0); }
+function derive(){
+  const st={};
+  for(const it of all('items')) st[it.id]={qty:0, avg:num(it.defaultCost), lots:[], deficit:0, txns:[], lastIn:null, inQty:0, outQty:0};
+  const mvs=all('movements').sort(mvSort);
+  for(const mv of mvs){
+    for(const ln of mv.lines||[]){
+      const s=st[ln.itemId]; if(!s) continue;
+      const q=num(ln.qty);
+      if(mv.type==='cost'){ s.avg=num(ln.unitCost); s.txns.push({mv, ln, in:0, out:0, bal:s.qty, avg:s.avg}); continue; }
+      if(q>0){
+        const u = ln.unitCost!=null && ln.unitCost!=='' ? num(ln.unitCost) : s.avg;
+        const base=Math.max(s.qty,0);
+        s.avg = (base<=0 || s.avg<=0) ? u : (base*s.avg + q*u)/(base+q);
+        let add=q; if(s.deficit>0){ const t=Math.min(s.deficit,add); s.deficit-=t; add-=t; }
+        const same = add>1e-9 && s.lots.find(l=>l.lot===(ln.lot||'') && l.exp===(ln.exp||'') && l.supplierId===(mv.supplierId||''));
+        if(same && (mv.type==='void'||mv.type==='return'||mv.type==='cancel'||mv.type==='adjustment')) { same.qty+=add; add=0; }
+        if(add>1e-9) s.lots.push({lot:ln.lot||'', exp:ln.exp||'', qty:add, date:mv.date, supplierId:mv.supplierId||'', mvId:mv.id, ref:mv.ref, unitCost:u});
+        if(mv.type==='purchase'||mv.type==='opening') s.lastIn={date:mv.date, mvId:mv.id, qty:q, unitCost:u, supplierId:mv.supplierId||''};
+        s.inQty+=q;
+      } else if(q<0){
+        let need=-q;
+        s.lots.sort((a,b)=>(a.exp||'9999-99').localeCompare(b.exp||'9999-99') || a.date.localeCompare(b.date));
+        for(const lot of s.lots){ if(need<=1e-9) break; const t=Math.min(lot.qty,need); lot.qty-=t; need-=t; }
+        s.lots=s.lots.filter(l=>l.qty>1e-9);
+        if(need>1e-9) s.deficit+=need;
+        s.outQty+=-q;
+      }
+      s.qty=r4(s.qty+q);
+      s.txns.push({mv, ln, in:q>0?q:0, out:q<0?-q:0, bal:s.qty, avg:s.avg});
+    }
+  }
+  for(const id in st){ const s=st[id]; s.avg=r4(s.avg); s.value=Math.max(s.qty,0)*s.avg; }
+  return {st, mvs};
+}
+const stOf = id => dv().st[id] || {qty:0,avg:0,lots:[],txns:[],value:0};
+function itemStatus(it){
+  if(it.status==='inactive') return ['Inactive','c-rest','inactive'];
+  const s=stOf(it.id);
+  if(s.qty<0) return ['Negative','c-bad','neg'];
+  if(s.qty<=0) return ['Out of stock','c-bad','out'];
+  if(num(it.reorderLevel)>0 && s.qty<=num(it.reorderLevel)) return ['Low stock','c-opt','low'];
+  return ['Healthy','c-ok','ok'];
+}
+function expiringLots(days){
+  const out=[]; const items=all('items');
+  for(const it of items){ for(const lot of stOf(it.id).lots){ if(!lot.exp) continue; const d=daysTo(lot.exp); if(d<=days) out.push({it,lot,d}); } }
+  return out.sort((a,b)=>a.d-b.d);
+}
+const expBucket = d => d<0?['Expired','c-bad']:d<=30?['≤ 30 days','c-bad']:d<=60?['≤ 60 days','c-opt']:['≤ 90 days','c-warn'];
+
+/* ---------- products (BOM) ---------- */
+function productCost(p){ return r2((p.components||[]).reduce((s,c)=>s+stOf(c.itemId).avg*num(c.qty),0) + num(p.extraCost)); }
+function productAvail(p){
+  const comps=(p.components||[]).filter(c=>get('items',c.itemId) && num(c.qty)>0);
+  if(!comps.length) return null;
+  let n=Infinity, limit=null;
+  for(const c of comps){ const k=Math.floor(Math.max(0,stOf(c.itemId).qty)/num(c.qty)+1e-9); if(k<n){ n=k; limit=get('items',c.itemId); } }
+  return {n, limit};
+}
+const margin = (price,cost) => price>0 ? (price-cost)/price : null;
+function needsFor(lines){ // lines: [{productId, qty}] → {itemId: qty}
+  const m={};
+  for(const ln of lines){ const p=get('products',ln.productId); if(!p) continue; for(const c of p.components||[]) m[c.itemId]=r4((m[c.itemId]||0)+num(c.qty)*num(ln.qty)); }
+  return m;
+}
+function shortages(needs){
+  const out=[]; for(const id in needs){ const it=get('items',id); const have=stOf(id).qty; if(needs[id]>have+1e-9) out.push({it, need:needs[id], have}); } return out;
+}
+
+/* ---------- orders ---------- */
+const oSub = o => (o.items||[]).reduce((s,l)=>s+num(l.qty)*num(l.price),0);
+const oTotal = o => r2(oSub(o) - num(o.discount) + num(o.shipping));
+const oCogs = o => r2((o.items||[]).reduce((s,l)=>s+num(l.qty)*num(l.unitCogs),0));
+const oPaid = o => r2((o.payments||[]).reduce((s,p)=>s+num(p.amount),0));
+const oCounts = o => !o.voided && CONFIRMED.has(o.status) && o.paymentStatus!=='Refunded';
+const oBal = o => oCounts(o) ? r2(oTotal(o)-oPaid(o)) : 0;
+const oDeducted = o => !!o.deductMv && !o.reverseMv;
+const custName = o => (o.customerId && get('customers',o.customerId)?.name) || o.customerName || 'Walk-in';
+const oTitle = o => (o.items||[]).map(l=>(num(l.qty)!==1?qf(l.qty)+'× ':'')+l.name).join(', ') || 'Order';
+function nextNo(col, prefix, start){
+  let mx=start; for(const o of all(col)){ const n=parseInt(String(o.no||'').replace(/\D/g,''),10); if(n>mx) mx=n; } return prefix+(mx+1);
+}
+function payStatusFor(o){ const t=oTotal(o), p=oPaid(o); if(o.paymentStatus==='Refunded') return 'Refunded'; if(p<=0.004) return 'Unpaid'; if(p+0.004>=t) return 'Paid'; return 'Partially Paid'; }
+
+/* ---------- purchases ---------- */
+const puSub = p => (p.lines||[]).reduce((s,l)=>s+num(l.qty)*num(l.unitCost),0);
+const puTotal = p => r2(puSub(p) + num(p.fees));
+const supName = p => (p.supplierId && get('suppliers',p.supplierId)?.name) || p.supplierName || '—';
+
+/* ---------- periods & finance ---------- */
+const U = { view:'dashboard', period:'month', from:'', to:'', q:{}, f:{}, sub:{}, report:'pl' };
+function rangeOf(key){
+  const t=new Date(), y=t.getFullYear(), m=t.getMonth();
+  switch(key){
+    case 'today': return [today(),today(),'Today'];
+    case 'week': { const dow=(t.getDay()+6)%7; const a=new Date(y,m,t.getDate()-dow); return [isoD(a), isoD(new Date(a.getFullYear(),a.getMonth(),a.getDate()+6)),'This week']; }
+    case 'month': return [isoD(new Date(y,m,1)), isoD(new Date(y,m+1,0)), MON[m]+' '+y];
+    case 'last': return [isoD(new Date(y,m-1,1)), isoD(new Date(y,m,0)), MON[(m+11)%12]+' '+(m===0?y-1:y)];
+    case 'quarter': { const q=Math.floor(m/3); return [isoD(new Date(y,q*3,1)), isoD(new Date(y,q*3+3,0)), 'Q'+(q+1)+' '+y]; }
+    case 'year': return [y+'-01-01', y+'-12-31', String(y)];
+    case 'custom': return [U.from||'0000-01-01', U.to||'9999-12-31', (U.from?fd(U.from):'Start')+' – '+(U.to?fd(U.to):'today')];
+    default: return ['0000-01-01','9999-12-31','All time'];
+  }
+}
+const inR = (d,[a,b]) => d>=a && d<=b;
+const LOSS_EXCLUDE = new Set(['Returned to supplier']);
+function fin(range){
+  const os=all('orders').filter(o=>oCounts(o) && inR(o.date,range));
+  const revenue=os.reduce((s,o)=>s+oTotal(o),0), cogs=os.reduce((s,o)=>s+oCogs(o),0);
+  const ex=all('expenses').filter(e=>!e.voided && inR(e.date,range));
+  const opex=ex.filter(e=>e.category!=='Inventory purchases').reduce((s,e)=>s+num(e.amount),0);
+  let losses=0;
+  for(const mv of all('movements')) if(mv.type==='adjustment' && !LOSS_EXCLUDE.has(mv.reason) && inR(mv.date,range)) for(const ln of mv.lines||[]) losses += -num(ln.qty)*num(ln.unitCost);
+  const gross=revenue-cogs, net=gross-opex-losses;
+  // cash
+  let cashIn=0;
+  for(const o of all('orders')) if(!o.voided) for(const p of o.payments||[]) if(inR(p.date,range)) cashIn+=num(p.amount);
+  const pus=all('purchases').filter(p=>!p.voided && inR(p.date,range));
+  const supplierPaid=pus.reduce((s,p)=>s+num(p.paid),0);
+  const shipping=ex.filter(e=>e.category==='Shipping').reduce((s,e)=>s+num(e.amount),0);
+  const invExp=ex.filter(e=>e.category==='Inventory purchases').reduce((s,e)=>s+num(e.amount),0);
+  const otherOpex=opex-shipping;
+  const cashOut=supplierPaid+opex+invExp;
+  return { revenue, cogs, gross, margin:margin(revenue,cogs), opex, losses, net, orders:os.length, aov:os.length?revenue/os.length:0,
+    units:os.reduce((s,o)=>s+(o.items||[]).reduce((a,l)=>a+num(l.qty),0),0), cashIn, supplierPaid, shipping, otherOpex, invExp, cashOut, netCash:cashIn-cashOut, os, ex, pus };
+}
+const receivable = () => all('orders').reduce((s,o)=>s+Math.max(0,oBal(o)),0);
+const payable = () => all('purchases').filter(p=>!p.voided).reduce((s,p)=>s+Math.max(0,puTotal(p)-num(p.paid)),0);
+function monthly(n){
+  const t=new Date(), out=[];
+  for(let i=n-1;i>=0;i--){ const d=new Date(t.getFullYear(),t.getMonth()-i,1); const f=fin([isoD(d), isoD(new Date(d.getFullYear(),d.getMonth()+1,0))]); out.push({l:MON[d.getMonth()], ...f}); }
+  return out;
+}
+
+/* ---------- movements (the only way stock changes) ---------- */
+function mkMovement(type, date, lines, extra={}){
+  return { id:uid('mv_'), type, date, lines:lines.filter(l=>Math.abs(num(l.qty))>1e-9 || type==='cost'), created:Date.now(), by:S.uid||'local', ...extra };
+}
+const MV_LABEL = {opening:'Opening balance', purchase:'Purchase', sale:'Sale', return:'Return', cancel:'Cancelled order', void:'Void', adjustment:'Adjustment', cost:'Cost update'};
+function mvLabel(mv){
+  const base=MV_LABEL[mv.type]||mv.type;
+  if(mv.type==='adjustment') return 'Adjustment: '+(mv.reason||'');
+  if(mv.refNo) return base+' '+mv.refNo;
+  return base;
+}
+
+/* ---------- migration from the first version of the app ---------- */
+function migrateV1(v1){
+  // v1 = {products, listings, orders, purchases, expenses, clients, meta} (each {items:[...]} or {data:{}})
+  const L=k=>(v1[k]&&v1[k].items)||[];
+  const out={items:[],products:[],movements:[],orders:[],purchases:[],expenses:[],customers:[],suppliers:[],settings:[]};
+  const typeOf=p=>{ const n=p.name.toLowerCase();
+    if(p.kind==='stock'){ if(n.includes('bac')) return 'Bacwater'; if(n.includes('acid')) return 'Other'; return 'Peptide'; }
+    if(n.includes('syringe')) return 'Syringe';
+    if(/box|bag|pouch|sticker|tape|bubble|foil|cap|carton/.test(n)) return 'Packaging';
+    return 'Supplies'; };
+  const catOf=t=>({Peptide:'Peptides',Bacwater:'Bacteriostatic water',Packaging:'Packaging',Syringe:'Syringes & needles',Supplies:'Cleaning & swabs',Other:'Other supplies'}[t]);
+  const unitOf=(t,u)=>t==='Peptide'||t==='Bacwater'?'vial':(u==='bottles'?'bottle':'pc');
+  const openLines=[];
+  for(const p of L('products')){
+    const t=typeOf(p);
+    out.items.push({id:p.id,name:p.name,sku:p.code||'',type:t,category:catOf(t),unit:unitOf(t,p.unit),defaultCost:num(p.cost),sellPrice:0,supplierId:'',reorderLevel:num(p.low),reorderQty:0,status:'active',notes:p.note||'',created:Date.now()});
+    if(num(p.qty)) openLines.push({itemId:p.id, qty:num(p.qty), unitCost:num(p.cost)});
+  }
+  if(openLines.length) out.movements.push({id:'mv_opening', type:'opening', date:today(), lines:openLines, created:1, by:'import', note:'Opening balance from your spreadsheet (Inventory + Supplies tabs). Supply counts were estimated — do a stock count.'});
+  const ptype={set:'Set / Kit',vialwater:'Vial + Water',vial:'Vial Only',other:'Custom'};
+  for(const l of L('listings')){
+    out.products.push({id:l.id,name:l.name,sku:l.name.toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/-+$/,''),type:ptype[l.form]||'Custom',description:l.note||'',price:num(l.priceD),resellerPrice:num(l.priceR),extraCost:num(l.extra),components:(l.parts||[]).map(x=>({itemId:x.pid,qty:num(x.qty)})),status:'active',created:Date.now()});
+  }
+  const pst={paid:'Paid',partial:'Partially Paid',unpaid:'Unpaid'};
+  const os=[...L('orders')].sort((a,b)=>a.date.localeCompare(b.date)||(a.created||0)-(b.created||0));
+  os.forEach((o,i)=>{
+    const tot=r2((o.lines||[]).reduce((s,l)=>s+num(l.qty)*num(l.price),0)-num(o.discount)+num(o.ship));
+    const paid=o.status==='paid'?tot:o.status==='partial'?num(o.paid):0;
+    out.orders.push({id:o.id,no:'SO-'+(1001+i),date:o.date,customerId:o.clientId||'',customerName:o.clientName||'',
+      items:(o.lines||[]).map(l=>({productId:l.lid,name:l.name.replace(/\bset\b/,'Set'),qty:num(l.qty),price:num(l.price),unitCogs:num(l.cost)})),
+      discount:num(o.discount),shipping:num(o.ship),paymentMethod:'Other',paymentStatus:pst[o.status]||'Paid',
+      payments:paid>0?[{id:uid('pay_'),date:o.date,amount:paid,method:'Other'}]:[],status:'Completed',notes:o.note||'',imported:true,created:i+1,by:'import'});
+  });
+  const ps=[...L('purchases')].sort((a,b)=>a.date.localeCompare(b.date));
+  ps.forEach((p,i)=>{
+    const lines=(p.lines||[]).map(l=>({itemId:l.pid||'',name:l.name,qty:num(l.qty),unitCost:r4(num(l.total)/(num(l.qty)||1)),lot:'',exp:'',note:l.note||''}));
+    const tot=r2(lines.reduce((s,l)=>s+l.qty*l.unitCost,0)+num(p.fees));
+    out.purchases.push({id:p.id,no:'PO-'+(1001+i),date:p.date,supplierId:'',supplierName:p.supplier||'',lines,fees:num(p.fees),paymentStatus:'Paid',paid:tot,paymentMethod:'Other',notes:(p.note||'')+(p.note?' · ':'')+'Imported. Stock was already counted in the opening balance.',imported:true,created:i+1,by:'import'});
+  });
+  const ecat={'Shipping':'Shipping','Platform & payment fees':'Bank/payment fees','Ads & marketing':'Advertising','Packaging':'Packaging'};
+  for(const e of L('expenses')) out.expenses.push({id:e.id,date:e.date,description:e.desc,category:ecat[e.cat]||'Miscellaneous',amount:num(e.amount),method:'Other',vendor:'',notes:'Imported',created:Date.now(),by:'import'});
+  for(const c of L('clients')) out.customers.push({id:c.id,name:c.name,type:c.type==='reseller'?'Reseller':'Direct',phone:c.contact||'',email:'',address:'',notes:c.note||'',created:Date.now()});
+  const meta=(v1.meta&&v1.meta.data)||{};
+  out.settings.push(Object.assign(clone(DEFAULTS),{id:'main',currency:meta.currency||'₱',migratedFrom:'v1',created:Date.now()}));
+  return out;
+}
+async function writeImport(out){
+  for(const c in out) for(const o of out[c]) await put(c,o);
+  await audit('import','settings','main','Imported data from the first version of the app');
+}
+
+/* ---------- boot ---------- */
+let renderT=null;
+const scheduleRender = () => { clearTimeout(renderT); renderT=setTimeout(()=>render(),60); };
+async function boot(){
+  lsLoad(); S.ver++;
+  render();
+  let db=null, user=null;
+  if(window.claude && window.claude.use){
+    try{ [db,user]=await Promise.all([window.claude.use('db'), window.claude.use('user')]); }catch(e){}
+  }
+  if(db && user){
+    const id=await user.id();
+    if(id){
+      S.db=db; S.user=user; S.uid=id; S.mode='db';
+      try{ S.role = ((await user.isOwner()) || (await user.canEdit())) ? 'admin' : 'staff'; }catch(e){ S.role='staff'; }
+      for(const c of COLS) D[c]=new Map();
+      await Promise.all(COLS.map(c=>new Promise(res=>{
+        let first=true; const t=setTimeout(()=>{ if(first){ first=false; res(); } },8000);
+        db.collection(c).onSnapshot(snap=>{
+          D[c]=new Map(snap.docs.map(d=>[d.id, d.data()])); S.ver++; S.loaded.add(c);
+          if(first){ first=false; clearTimeout(t); res(); } else scheduleRender();
+        }, err=>{ console.warn('snapshot',c,err); if(first){ first=false; clearTimeout(t); res(); } });
+      })));
+      // first run: bring data over
+      if(!get('settings','main') && isAdmin()){
+        let v1=null;
+        try{ const keys=['products','listings','orders','purchases','expenses','clients','meta']; const got={};
+          for(const k of keys){ const s=await db.doc('data/users/'+id+'/'+k).get(); if(s.exists) got[k]=s.data(); }
+          if(got.products||got.listings) v1=got; }catch(e){}
+        if(!v1) v1=lsV1();
+        if(v1) await writeImport(migrateV1(v1));
+        else await put('settings', Object.assign(clone(DEFAULTS),{id:'main',created:Date.now()}));
+      }
+      if(!get('people',id)) { try{ await put('people',{id, name:'', role:S.role, firstSeen:Date.now()}); }catch(e){} }
+      else if(get('people',id).role!==S.role){ try{ await put('people',{...get('people',id), role:S.role}); }catch(e){} }
+      try{ S.assets = isAdmin() ? await window.claude.use('assets') : null; }catch(e){ S.assets=null; }
+    }
+  } else if(!get('settings','main')){
+    const v1=lsV1();
+    if(v1) await writeImport(migrateV1(v1));
+    else await put('settings', Object.assign(clone(DEFAULTS),{id:'main',created:Date.now()}));
+  }
+  S.ready=true; S.ver++; render();
+}
+function lsV1(){
+  try{ const o={}; for(const k of ['products','listings','orders','purchases','expenses','clients','meta']){ const v=localStorage.getItem('shopdesk:v1:'+k); if(v) o[k]=JSON.parse(v); } return (o.products||o.listings)?o:null; }catch(e){ return null; }
+}
+</script>
+<script>
+/* =================== shell =================== */
+const NAV=[['dashboard','Dashboard','dash'],['orders','Orders','bag'],['products','Products & Kits','kit'],['inventory','Inventory','box'],['purchases','Purchases','truck'],['expenses','Expenses','receipt'],['customers','Customers','users'],['suppliers','Suppliers','factory'],['reports','Reports','chart'],['settings','Settings','gear']];
+const DOCK=['dashboard','orders','products','inventory'];
+function render(){
+  const c=cfg();
+  if(c.theme) document.documentElement.dataset.theme=c.theme; else delete document.documentElement.dataset.theme;
+  const bname='Shopepteez', bsub=esc(c.business?.name||'');
+  const pend=all('orders').filter(o=>!o.voided && (o.status==='Pending'||o.status==='Processing'||o.status==='Packed')).length;
+  const me=get('people',S.uid);
+  $('#side').innerHTML=`<div class="brand"><span class="lg">${ic('vial',2)}</span><div><b>${bname}</b><span>${bsub||(S.mode==='db'?'Synced to your account':'Saved on this device')}</span></div></div>
+    ${NAV.map(([k,l,i],n)=>(n===2?'<div class="grp">Stock</div>':n===6?'<div class="grp">People</div>':n===8?'<div class="grp">Insights</div>':'')+`<button class="nv" data-act="nav" data-v="${k}" ${U.view===k?'aria-current="page"':''}>${ic(i)}${l}${k==='orders'&&pend?`<span class="cnt">${pend}</span>`:''}</button>`).join('')}
+    ${typeof installEvt!=='undefined'&&installEvt&&!isStandalone()?`<button class="nv" data-act="install" style="margin-top:12px;background:rgba(255,255,255,.08);opacity:1">${ic('dl')}Install app</button>`:''}
+    <div class="me"><b>${esc(me?.name||'You')}</b><span>${isAdmin()?'Admin · full access':'Staff · limited access'}</span></div>`;
+  $('#mtop').innerHTML=`<div class="brand"><span class="lg">${ic('vial',2)}</span><div><b>${bname}</b><span>${bsub?bsub+' · ':''}${isAdmin()?'Admin':'Staff'}</span></div></div><button class="round" data-act="newSale" aria-label="New sale">${ic('plus')}</button>`;
+  const inMore=!DOCK.includes(U.view);
+  $('#dock').innerHTML=DOCK.map(k=>{ const [_,l,i]=NAV.find(n=>n[0]===k); return `<button data-act="nav" data-v="${k}" ${U.view===k?'aria-current="page"':''} aria-label="${l}">${ic(i)}<span>${l.split(' ')[0]}</span></button>`; }).join('')+`<button data-act="more" ${inMore?'aria-current="page"':''} aria-label="More sections">${ic('more')}<span>${inMore?NAV.find(n=>n[0]===U.view)[1].split(' ')[0]:'More'}</span></button>`;
+  const V={dashboard:vDash,orders:vOrders,products:vProducts,inventory:vInventory,purchases:vPurchases,expenses:vExpenses,customers:vCustomers,suppliers:vSuppliers,reports:vReports,settings:vSettings}[U.view];
+  const focus=document.activeElement?.id, pos=document.activeElement?.selectionStart;
+  $('#main').innerHTML = S.ready||all('settings').length ? V() : '<div class="empty"><h3>Loading your business…</h3></div>';
+  if(focus){ const el=document.getElementById(focus); if(el && el.tagName==='INPUT'){ el.focus(); try{ el.setSelectionRange(pos,pos); }catch(e){} } }
+}
+const ph = (t,p,acts='') => `<header class="ph"><div><h1>${esc(t)}</h1>${p?`<p>${p}</p>`:''}</div><div class="acts">${acts}</div></header>`;
+const searchBox = (key, ph) => `<label class="search">${ic('search')}<input type="search" id="q_${key}" data-q="${key}" placeholder="${esc(ph)}" value="${esc(U.q[key]||'')}"></label>`;
+const qOf = k => (U.q[k]||'').trim().toLowerCase();
+const chipsF = (key, opts, cur) => `<div class="chips">${opts.map(([v,l,n])=>`<button data-act="filt" data-k="${key}" data-v="${v}" aria-pressed="${cur===v}">${l}${n?`<span class="n">${n}</span>`:''}</button>`).join('')}</div>`;
+function periodBar(){
+  const P=[['today','Today'],['week','This week'],['month','This month'],['last','Last month'],['quarter','This quarter'],['year','This year'],['all','All time'],['custom','Custom']];
+  return `<div class="chips" style="margin-bottom:${U.period==='custom'?8:16}px">${P.map(([k,l])=>`<button data-act="period" data-v="${k}" aria-pressed="${U.period===k}">${l}</button>`).join('')}</div>
+  ${U.period==='custom'?`<div class="row wr" style="margin-bottom:16px;gap:8px"><label class="f" style="max-width:180px">From<input type="date" id="pFrom" value="${U.from}"></label><label class="f" style="max-width:180px">To<input type="date" id="pTo" value="${U.to}"></label></div>`:''}`;
+}
+const payChip = s => `<span class="chip ${s==='Paid'?'c-ok':s==='Partially Paid'?'c-opt':s==='Refunded'?'c-vio':'c-info'}">${esc(s||'—')}</span>`;
+const stChip = s => `<span class="chip ${s==='Completed'?'c-ok':s==='Pending'?'c-warn':s==='Cancelled'||s==='Returned'?'c-rest':'c-info'}"><i></i>${esc(s)}</span>`;
+const lockNote = msg => `<span class="lock">${ic('lock')}${esc(msg||'Admin only')}</span>`;
+function tableHTML(cols, rows, {click, foot, empty, rowCls}={}){
+  if(!rows.length) return `<div class="card empty">${empty||'<h3>Nothing here yet</h3>'}</div>`;
+  return `<div class="tbl-wrap"><table class="t"><thead><tr>${cols.map(c=>`<th class="${c.num?'num':''}">${c.h}</th>`).join('')}</tr></thead><tbody>
+  ${rows.map(r=>`<tr class="${click?'click':''} ${rowCls?rowCls(r):''}" ${click?click(r):''}>${cols.map(c=>`<td class="${c.num?'num':''} ${c.cls||''}">${c.v(r)}</td>`).join('')}</tr>`).join('')}</tbody>
+  ${foot?`<tfoot><tr>${foot.map((f,i)=>`<td class="${cols[i]?.num?'num':''}">${f??''}</td>`).join('')}</tr></tfoot>`:''}</table></div>`;
+}
+function svgBars(data, keys, colors, h=190){
+  const W=640,H=h,pad=8,n=data.length,bw=(W-pad*2)/n; const mx=Math.max(1,...data.flatMap(d=>keys.map(k=>Math.max(0,d[k]))));
+  const w=bw*0.7/keys.length;
+  let s='';
+  data.forEach((d,i)=>{ const x0=pad+i*bw+bw*0.15;
+    keys.forEach((k,j)=>{ const v=Math.max(0,d[k]); const hh=v/mx*(H-34); s+=`<rect x="${x0+j*w}" y="${H-20-hh}" width="${w-3}" height="${Math.max(hh,1)}" rx="5" fill="${colors[j]}"><title>${d.l}: ${money(d[k],0)}</title></rect>`; });
+    s+=`<text x="${pad+i*bw+bw/2}" y="${H-4}" text-anchor="middle" font-size="12" fill="var(--muted)">${d.l}</text>`; });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly chart">${s}</svg>`;
+}
+
+/* =================== DASHBOARD =================== */
+function vDash(){
+  const c=cfg(), r=rangeOf(U.period), f=fin(r);
+  const fT=fin(rangeOf('today')), fW=fin(rangeOf('week')), fM=fin(rangeOf('month')), fA=fin(rangeOf('all'));
+  const items=all('items').filter(i=>i.status!=='inactive');
+  const counts={out:0,low:0,ok:0,neg:0}; for(const it of items){ counts[itemStatus(it)[2]]++; }
+  const units=items.reduce((s,i)=>s+Math.max(0,stOf(i.id).qty),0), value=items.reduce((s,i)=>s+stOf(i.id).value,0);
+  const exp=expiringLots(num(c.expiryWarnDays)||90);
+  const prods=all('products').filter(p=>p.status!=='inactive').sort((a,b)=>a.name.localeCompare(b.name));
+  const recent=[]; for(const p of all('purchases').filter(p=>!p.voided).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4)) for(const l of p.lines) recent.push({p,l});
+  const att=attention();
+  const mo=monthly(6);
+  const greet=new Date().getHours()<12?'Good morning':new Date().getHours()<18?'Good afternoon':'Good evening';
+  return ph(greet+(c.business?.owner?', '+c.business.owner.split(' ')[0]:''), `Here’s how ${esc(c.business?.name||'your shop')} is doing.`) + `
+  <div class="qa">
+    <button class="main" data-act="newSale"><span class="qi">${ic('plus')}</span>New Sale</button>
+    <button data-act="newPurchase" ${isAdmin()?'':'disabled'}><span class="qi">${ic('truck')}</span>Add Purchase</button>
+    <button data-act="newExpense" ${isAdmin()?'':'disabled'}><span class="qi">${ic('receipt')}</span>Add Expense</button>
+    <button data-act="newProduct" ${isAdmin()?'':'disabled'}><span class="qi">${ic('kit')}</span>Add Product</button>
+    <button data-act="newAdjust" ${canAdjust()?'':'disabled'}><span class="qi">${ic('sliders')}</span>Inventory Adjustment</button>
+    <button data-act="nav" data-v="orders"><span class="qi">${ic('bag')}</span>View Orders</button>
+    <button data-act="nav" data-v="reports"><span class="qi">${ic('chart')}</span>View Reports</button>
+  </div>
+  <div class="sec"><h2>Sales</h2></div>
+  <div class="kpis">
+    <div class="kpi"><span>Today</span><b>${money(fT.revenue,0)}</b><small>${fT.orders} order${fT.orders===1?'':'s'}</small></div>
+    <div class="kpi"><span>This week</span><b>${money(fW.revenue,0)}</b><small>${fW.orders} order${fW.orders===1?'':'s'}</small></div>
+    <div class="kpi hl"><span>This month</span><b>${money(fM.revenue,0)}</b><small>${fM.orders} order${fM.orders===1?'':'s'}</small></div>
+    <div class="kpi"><span>Total sales</span><b>${money(fA.revenue,0)}</b><small>All time</small></div>
+    <div class="kpi"><span>Number of orders</span><b>${qf(fA.orders)}</b><small>All time, confirmed</small></div>
+    <div class="kpi"><span>Average order value</span><b>${money(fA.aov,0)}</b><small>All time</small></div>
+  </div>
+  <div class="grid2" style="margin-top:8px">
+    <div>
+      <div class="sec"><h2>Financials</h2></div>
+      ${periodBar()}
+      <div class="card">
+        <div class="card-h"><h3>${esc(r[2])}</h3><span class="chip ${f.net>=0?'c-ok':'c-bad'}">${f.net>=0?'Profit':'Loss'}</span></div>
+        ${flowHTML(f)}
+        <div class="mini" style="margin-top:12px"><div><span>Cash received</span><b>${money(f.cashIn,0)}</b></div><div><span>Unpaid sales</span><b>${money(receivable(),0)}</b></div><div><span>Gross margin</span><b>${pct(f.margin)}</b></div></div>
+      </div>
+      <div class="card" style="margin-top:14px"><div class="card-h"><h3>Last 6 months</h3></div>
+        ${svgBars(mo,['revenue','gross','net'],['var(--pink)','var(--pink-200)','var(--nav)'])}
+        <div class="legend"><span><i style="background:var(--pink)"></i>Revenue</span><span><i style="background:var(--pink-200)"></i>Gross profit</span><span><i style="background:var(--nav)"></i>Net profit</span></div></div>
+    </div>
+    <div>
+      <div class="sec"><h2>Needs attention</h2></div>
+      ${att.length?att.map(a=>`<button class="att ${a.cls}" data-act="${a.act}" ${a.data||''}><span class="ai">${ic(a.icon)}</span><div><b>${esc(a.t)}</b><span>${esc(a.s)}</span></div></button>`).join(''):`<div class="card small muted">All clear. Stock, prices and payments look fine.</div>`}
+      <div class="sec"><h2>Inventory</h2><button class="lnk" data-act="nav" data-v="inventory">Open</button></div>
+      <div class="kpis k3">
+        <div class="kpi"><span>Items</span><b>${items.length}</b></div>
+        <div class="kpi"><span>Units on hand</span><b>${qf(units)}</b></div>
+        <div class="kpi"><span>Value at cost</span><b>${money(value,0)}</b></div>
+      </div>
+      <div class="health" style="margin-top:10px">
+        <button class="hb-bad" data-act="invFilter" data-v="out"><b>${counts.out+counts.neg}</b><span>Out of stock</span></button>
+        <button class="hb-warn" data-act="invFilter" data-v="low"><b>${counts.low}</b><span>Low stock</span></button>
+        <button class="hb-ok" data-act="invFilter" data-v="ok"><b>${counts.ok}</b><span>Healthy</span></button>
+      </div>
+      <button class="kpi" style="margin-top:10px" data-act="invFilter" data-v="expiring"><span>Items expiring soon (≤ ${num(c.expiryWarnDays)||90} days)</span><b>${exp.length} batch${exp.length===1?'':'es'}</b><small>${exp.length?exp.slice(0,3).map(e=>esc(e.it.name)+' · '+fd(e.lot.exp)).join(', '):'Add expiry dates when you record purchases to track this.'}</small></button>
+      ${recent.length?`<div class="sec"><h2>Recently purchased</h2><button class="lnk" data-act="nav" data-v="purchases">All</button></div>
+      ${tableHTML([{h:'Item',v:x=>esc(x.l.name||get('items',x.l.itemId)?.name)},{h:'Qty',num:1,v:x=>qf(x.l.qty)},{h:'Unit cost',num:1,v:x=>money(x.l.unitCost)},{h:'Date',v:x=>fd(x.p.date)}], recent.slice(0,6), {click:x=>`data-act="openPurchase" data-id="${x.p.id}"`})}`:''}
+    </div>
+  </div>
+  <div class="sec"><h2>Products available to sell</h2><button class="lnk" data-act="nav" data-v="products">Manage</button></div>
+  ${tableHTML([
+    {h:'Product',v:p=>`<span class="nm">${esc(p.name)}</span><div class="sub">${esc(p.type)}</div>`},
+    {h:'Available',num:1,v:p=>{ const a=productAvail(p); return a?`<b style="font-weight:600" class="${a.n===0?'neg':''}">${a.n}</b>${a.limit&&a.n<10?`<div class="sub">limited by ${esc(a.limit.name)}</div>`:''}`:'<span class="chip c-warn">No recipe</span>'; }},
+    {h:'Selling price',num:1,v:p=>num(p.price)>0?money(p.price):'<span class="muted">Not set</span>'},
+    {h:'COGS',num:1,v:p=>money(productCost(p))},
+    {h:'Profit',num:1,v:p=>{ const c=productCost(p); return num(p.price)>0?`<span class="${p.price<c?'neg':'pos'}">${money(p.price-c)}</span>`:'—'; }},
+    {h:'Margin',num:1,v:p=>pct(margin(num(p.price),productCost(p)))},
+  ], prods, {click:p=>`data-act="openProduct" data-id="${p.id}"`, empty:`<h3>No products yet</h3><p>Create a product like “T15 Set” and list the inventory it uses.</p>${isAdmin()?`<button class="btn primary" data-act="newProduct">${ic('plus')}Add product</button>`:''}`})}`;
+}
+function flowHTML(f){
+  return `<div class="flow">
+    <div class="st"><span>Revenue<small>${f.orders} confirmed order${f.orders===1?'':'s'}</small></span><b>${money(f.revenue)}</b></div>
+    <div class="ar">↓ minus</div>
+    <div class="st sub"><span>Cost of goods sold<small>Actual cost of the items in those orders</small></span><b>${money(-f.cogs)}</b></div>
+    <div class="ar">=</div>
+    <div class="st tot"><span>Gross profit<small>Margin ${pct(f.margin)}</small></span><b>${money(f.gross)}</b></div>
+    <div class="ar">↓ minus</div>
+    <div class="st sub"><span>Operating expenses<small>Excludes stock purchases (already in COGS)</small></span><b>${money(-f.opex)}</b></div>
+    ${Math.abs(f.losses)>0.004?`<div class="st sub"><span>Inventory losses<small>Damaged, expired, freebies, count corrections</small></span><b>${money(-f.losses)}</b></div>`:''}
+    <div class="ar">=</div>
+    <div class="st net"><span>Net profit<small>${f.revenue>0?pct(f.net/f.revenue)+' of revenue':'—'}</small></span><b>${money(f.net)}</b></div></div>`;
+}
+const canAdjust = () => isAdmin() || !!cfg().staffCanAdjust;
+function attention(){
+  const a=[], items=all('items').filter(i=>i.status!=='inactive');
+  const neg=items.filter(i=>stOf(i.id).qty<0);
+  if(neg.length) a.push({cls:'bad',icon:'alert',t:'Negative stock: '+neg.map(i=>i.name).join(', '),s:'More was sold than recorded. Log the missing purchase or do a stock count.',act:'invFilter',data:'data-v="out"'});
+  const out=items.filter(i=>stOf(i.id).qty===0), low=items.filter(i=>itemStatus(i)[2]==='low');
+  if(out.length) a.push({cls:'bad',icon:'box',t:out.length+' item'+(out.length>1?'s':'')+' out of stock',s:out.slice(0,4).map(i=>i.name).join(', ')+(out.length>4?'…':''),act:'invFilter',data:'data-v="out"'});
+  if(low.length) a.push({cls:'warn',icon:'box',t:low.length+' item'+(low.length>1?'s':'')+' low on stock',s:low.slice(0,4).map(i=>i.name+' ('+qf(stOf(i.id).qty)+')').join(', '),act:'invFilter',data:'data-v="low"'});
+  const ex=expiringLots(30);
+  if(ex.length) a.push({cls:'bad',icon:'clock',t:ex.length+' batch'+(ex.length>1?'es':'')+' expired or expiring within 30 days',s:ex.slice(0,3).map(e=>e.it.name+' '+fd(e.lot.exp)).join(', '),act:'invFilter',data:'data-v="expiring"'});
+  const pend=all('orders').filter(o=>!o.voided && o.status==='Pending');
+  if(pend.length) a.push({cls:'info',icon:'bag',t:pend.length+' pending order'+(pend.length>1?'s':''),s:'Stock isn’t deducted until you confirm them.',act:'ordFilter',data:'data-v="pending"'});
+  const unpaid=all('orders').filter(o=>oBal(o)>0.004);
+  if(unpaid.length) a.push({cls:'info',icon:'coin',t:money(receivable())+' unpaid from customers',s:unpaid.length+' order'+(unpaid.length>1?'s':'')+' · '+[...new Set(unpaid.map(custName))].slice(0,3).join(', '),act:'ordFilter',data:'data-v="unpaid"'});
+  const prods=all('products').filter(p=>p.status!=='inactive');
+  const noComp=prods.filter(p=>!(p.components||[]).length);
+  if(noComp.length) a.push({cls:'pink',icon:'kit',t:'No recipe: '+noComp.map(p=>p.name).join(', '),s:'Add components so selling it deducts inventory.',act:'nav',data:'data-v="products"'});
+  const noPrice=prods.filter(p=>!(num(p.price)>0));
+  if(noPrice.length) a.push({cls:'pink',icon:'kit',t:noPrice.length+' product'+(noPrice.length>1?'s':'')+' without a selling price',s:noPrice.map(p=>p.name).join(', '),act:'nav',data:'data-v="products"'});
+  const under=prods.filter(p=>num(p.price)>0 && num(p.price)<productCost(p));
+  if(under.length) a.push({cls:'bad',icon:'alert',t:'Selling below cost: '+under.map(p=>p.name).join(', '),s:'The price is lower than its COGS.',act:'nav',data:'data-v="products"'});
+  const noCost=items.filter(i=>!(stOf(i.id).avg>0) && prods.some(p=>(p.components||[]).some(c=>c.itemId===i.id)));
+  if(noCost.length) a.push({cls:'pink',icon:'receipt',t:'Missing cost: '+noCost.map(i=>i.name).join(', '),s:'COGS and profit will be off until these have a cost.',act:'nav',data:'data-v="inventory"'});
+  return a;
+}
+
+/* =================== ORDERS =================== */
+function vOrders(){
+  const f=U.f.orders||'all', q=qOf('orders');
+  let os=all('orders').sort((a,b)=>b.date.localeCompare(a.date)||(b.created||0)-(a.created||0));
+  const cnt=k=>os.filter(ORD_F[k]).length;
+  os=os.filter(ORD_F[f]);
+  if(q) os=os.filter(o=>(o.no+' '+custName(o)+' '+oTitle(o)+' '+(o.notes||'')).toLowerCase().includes(q));
+  const tot=os.filter(oCounts).reduce((s,o)=>s+oTotal(o),0);
+  return ph('Orders', 'Every sale. Confirming an order deducts its inventory automatically.', `<button class="btn primary" data-act="newSale">${ic('plus')}New Sale</button>`) + `
+  <div class="tb">${searchBox('orders','Search order no., customer, product')}</div>
+  <div style="margin-bottom:14px">${chipsF('orders',[['all','All'],['pending','Pending',cnt('pending')],['open','To fulfil',cnt('open')],['completed','Completed'],['unpaid','Unpaid',cnt('unpaid')],['closed','Cancelled / returned'],['void','Voided']],f)}</div>
+  ${tableHTML([
+    {h:'Order',v:o=>`<span class="nm">${esc(o.no)}</span>${o.imported?'<div class="sub">Imported</div>':''}`},
+    {h:'Date',v:o=>fd(o.date)},
+    {h:'Customer',v:o=>esc(custName(o))},
+    {h:'Items',cls:'wrapc',v:o=>esc(oTitle(o))},
+    {h:'Total',num:1,v:o=>money(oTotal(o))},
+    {h:'Payment',v:o=>o.voided?'<span class="chip c-rest">Voided</span>':payChip(o.paymentStatus)+(oBal(o)>0.004&&o.paymentStatus==='Partially Paid'?`<div class="sub">${money(oBal(o))} left</div>`:'')},
+    {h:'Status',v:o=>o.voided?'':stChip(o.status)},
+  ], os, {click:o=>`data-act="openOrder" data-id="${o.id}"`, rowCls:o=>o.voided?'void':'', foot:os.length?['','','','Counted in sales',money(tot),'','']:null,
+    empty:`<h3>No orders here</h3><p>Record a sale and the app deducts inventory, calculates COGS and updates profit for you.</p><button class="btn primary" data-act="newSale">${ic('plus')}New Sale</button>`})}`;
+}
+const ORD_F={ all:()=>true, pending:o=>!o.voided&&o.status==='Pending', open:o=>!o.voided&&['Pending','Processing','Packed','Shipped'].includes(o.status),
+  completed:o=>!o.voided&&o.status==='Completed', unpaid:o=>oBal(o)>0.004, closed:o=>!o.voided&&(o.status==='Cancelled'||o.status==='Returned'), void:o=>!!o.voided };
+
+function orderView(id){
+  const o=get('orders',id); if(!o) return;
+  const t=oTotal(o), cg=oCogs(o), bal=oBal(o);
+  const mvD=o.deductMv&&get('movements',o.deductMv), mvR=o.reverseMv&&get('movements',o.reverseMv);
+  const hist=auditFor(id);
+  const nextStatuses = ORDER_STATUS.filter(s=>s!==o.status && !(s==='Pending' && oDeducted(o)));
+  const body=`
+  ${o.voided?`<div class="banner bad"><b>Voided</b> on ${fdt(o.voidedAt)} — ${esc(o.voidReason||'')}. It no longer counts toward sales, and any deducted stock was returned.</div>`:''}
+  <div class="mini" style="margin-bottom:14px"><div><span>Total</span><b>${money(t)}</b></div><div><span>COGS</span><b>${money(cg)}</b></div><div><span>Gross profit</span><b class="${t-cg>=0?'pos':'neg'}">${money(t-cg)}</b></div><div><span>${bal>0.004?'Balance due':'Paid'}</span><b>${money(bal>0.004?bal:oPaid(o))}</b></div></div>
+  <div class="row wr" style="gap:6px;margin-bottom:12px">${o.voided?'':stChip(o.status)} ${payChip(o.paymentStatus)} <span class="chip c-rest">${esc(o.paymentMethod||'—')}</span>
+    ${o.imported?'<span class="chip c-rest">Imported from sheet — stock not changed</span>':mvD?`<span class="chip ${mvR?'c-rest':'c-ok'}">${mvR?'Stock returned '+fd(mvR.date):'Inventory deducted '+fd(mvD.date)}</span>`:'<span class="chip c-warn">Inventory not deducted yet</span>'}</div>
+  <div class="tbl-wrap flat"><table class="t"><thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Unit COGS</th><th class="num">Line total</th></tr></thead><tbody>
+  ${o.items.map(l=>`<tr><td>${esc(l.name)}</td><td class="num">${qf(l.qty)}</td><td class="num">${money(l.price)}</td><td class="num">${l.unitCogs!=null?money(l.unitCogs):'—'}</td><td class="num">${money(l.qty*l.price)}</td></tr>`).join('')}
+  ${num(o.discount)?`<tr><td>Discount</td><td></td><td></td><td></td><td class="num">${money(-o.discount)}</td></tr>`:''}
+  ${num(o.shipping)?`<tr><td>Shipping fee</td><td></td><td></td><td></td><td class="num">${money(o.shipping)}</td></tr>`:''}
+  </tbody><tfoot><tr><td>Total</td><td></td><td></td><td></td><td class="num">${money(t)}</td></tr></tfoot></table></div>
+  ${!o.unitCogsFinal && !oDeducted(o) && !o.imported?`<p class="hint">COGS shown is an estimate. It’s locked in when inventory is deducted.</p>`:''}
+  <dl class="kv" style="margin-top:14px"><dt>Customer</dt><dd>${esc(custName(o))}</dd><dt>Order date</dt><dd>${fd(o.date)}</dd>${o.notes?`<dt>Notes</dt><dd>${esc(o.notes)}</dd>`:''}<dt>Created by</dt><dd>${esc(personName(o.by))}</dd></dl>
+  ${(o.payments||[]).length?`<h3 style="font-size:15px;margin:16px 0 8px">Payments</h3>${tableHTML([{h:'Date',v:p=>fd(p.date)},{h:'Method',v:p=>esc(p.method)},{h:'Amount',num:1,v:p=>`<span class="${p.amount<0?'neg':''}">${money(p.amount)}</span>`}],o.payments)}`:''}
+  ${mvD?`<h3 style="font-size:15px;margin:16px 0 8px">Inventory movement</h3>${tableHTML([{h:'Item',v:l=>esc(get('items',l.itemId)?.name||'?')},{h:'Qty',num:1,v:l=>qf(l.qty)},{h:'Unit cost',num:1,v:l=>money(l.unitCost)}],mvD.lines)}`:''}
+  ${!o.voided?`<h3 style="font-size:15px;margin:18px 0 8px">Update</h3>
+  <div class="fg"><label class="f">Order status<select id="oStatus"><option value="">Keep “${esc(o.status)}”</option>${nextStatuses.map(s=>`<option>${s}</option>`).join('')}</select></label></div>
+  <div id="oStatusHint" class="hint"></div>`:''}
+  ${hist.length?`<h3 style="font-size:15px;margin:18px 0 8px">History</h3><div class="small">${hist.map(h=>`<div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span>${esc(h.summary)}</span><span class="muted xs">${fdt(h.t)} · ${esc(personName(h.u))}</span></div>`).join('')}</div>`:''}`;
+  const canPay = isAdmin() || cfg().staffCanPay;
+  const foot = o.voided ? `<div class="rt"><button class="btn" data-act="close">Close</button></div>` :
+   `${isAdmin()?`<button class="btn danger" data-act="voidOrder" data-id="${id}">Void order</button>`:lockNote('Only admins can void')}
+    <div class="rt">${bal>0.004&&canPay?`<button class="btn ok" data-act="payOrder" data-id="${id}">Record payment</button>`:''}${isAdmin()&&oPaid(o)>0&&o.paymentStatus!=='Refunded'?`<button class="btn" data-act="refundOrder" data-id="${id}">Refund</button>`:''}<button class="btn primary" data-act="saveOrderStatus" data-id="${id}">Save status</button></div>`;
+  openModal(o.no+' · '+custName(o), body, foot, '', oTitle(o));
+  const sel=$('#oStatus');
+  if(sel) sel.addEventListener('change',()=>{ const s=sel.value; let h='';
+    if(CONFIRMED.has(s) && !oDeducted(o) && !o.imported){ const sh=shortages(needsFor(o.items)); h = 'Confirming will deduct inventory now.' + (sh.length?` <b style="color:var(--bad)">Insufficient Inventory:</b> `+sh.map(x=>esc(x.it.name)+' (need '+qf(x.need)+', have '+qf(x.have)+')').join(', '):''); }
+    if((s==='Cancelled'||s==='Returned') && oDeducted(o)) h='Its inventory will go back into stock and it will stop counting as a sale.';
+    $('#oStatusHint').innerHTML=h; });
+}
+function auditFor(id){ const out=[]; for(const d of all('audit')) for(const e of d.entries||[]) if(e.ref===id) out.push(e); return out.sort((a,b)=>a.t-b.t); }
+
+async function deductOrder(o, date){
+  const needs=needsFor(o.items);
+  const lines=Object.keys(needs).map(itemId=>({itemId, qty:-needs[itemId], unitCost:stOf(itemId).avg}));
+  // lock actual COGS per line from current average costs
+  o.items=o.items.map(l=>{ const p=get('products',l.productId); return {...l, unitCogs: p? productCost(p) : num(l.unitCogs)}; });
+  o.unitCogsFinal=true;
+  const mv=mkMovement('sale', date||o.date, lines, {ref:{col:'orders',id:o.id}, refNo:o.no+' ('+oTitle(o)+')'});
+  await put('movements', mv); o.deductMv=mv.id; o.reverseMv=null;
+}
+async function reverseOrder(o, type){
+  const src=get('movements',o.deductMv); if(!src) return;
+  const mv=mkMovement(type, today(), src.lines.map(l=>({itemId:l.itemId, qty:-num(l.qty), unitCost:num(l.unitCost)})), {ref:{col:'orders',id:o.id}, refNo:o.no});
+  await put('movements', mv); o.reverseMv=mv.id;
+}
+async function saveOrderStatus(id){
+  const o=clone(get('orders',id)); const s=$('#oStatus')?.value; if(!s){ closeModal(); return; }
+  const prev=o.status;
+  if(CONFIRMED.has(s) && !oDeducted(o) && !o.imported){
+    const sh=shortages(needsFor(o.items));
+    if(sh.length && !confirm('Insufficient Inventory\n\n'+sh.map(x=>`${x.it.name}: need ${qf(x.need)}, have ${qf(x.have)}`).join('\n')+'\n\nConfirm anyway? Stock will go negative.')) return;
+    await deductOrder(o, today());
+  }
+  if((s==='Cancelled'||s==='Returned') && oDeducted(o)) await reverseOrder(o, s==='Returned'?'return':'cancel');
+  o.status=s; await put('orders',o); await audit('status','orders',id,`Status ${prev} → ${s}`);
+  closeModal(); render(); toast('Order '+o.no+' is now '+s);
+}
+function payModal(id){
+  const o=get('orders',id), bal=oBal(o);
+  openModal('Record payment · '+o.no, `<div class="fg"><label class="f">Amount<input type="number" step="any" inputmode="decimal" id="pyAmt" value="${bal}"></label><label class="f">Date<input type="date" id="pyDate" value="${today()}"></label>
+  <label class="f full">Method<select id="pyMethod">${cfg().paymentMethods.map(m=>`<option ${m===o.paymentMethod?'selected':''}>${esc(m)}</option>`).join('')}</select></label></div><p class="hint">Balance due: ${money(bal)}</p>`,
+  `<div class="rt"><button class="btn" data-act="openOrder" data-id="${id}">Back</button><button class="btn ok" data-act="savePay" data-id="${id}">Save payment</button></div>`, 'narrow');
+}
+async function savePay(id){
+  const o=clone(get('orders',id)); const a=num($('#pyAmt').value); if(!(a>0)){ toast('Enter an amount.'); return; }
+  o.payments=(o.payments||[]).concat({id:uid('pay_'),date:$('#pyDate').value||today(),amount:a,method:$('#pyMethod').value});
+  o.paymentStatus=payStatusFor({...o,paymentStatus:''}); o.paymentMethod=$('#pyMethod').value;
+  await put('orders',o); await audit('payment','orders',id,`Payment ${money(a)} via ${o.paymentMethod}`);
+  orderView(id); render(); toast('Payment recorded');
+}
+async function refundOrder(id){
+  const o=clone(get('orders',id)); const paid=oPaid(o);
+  if(!confirm(`Refund ${money(paid)} to ${custName(o)}? The order will stop counting as revenue. To put items back into stock, also set its status to Returned.`)) return;
+  o.payments=(o.payments||[]).concat({id:uid('pay_'),date:today(),amount:-paid,method:o.paymentMethod||'Other'});
+  o.paymentStatus='Refunded'; await put('orders',o); await audit('refund','orders',id,`Refunded ${money(paid)}`);
+  orderView(id); render(); toast('Refund recorded');
+}
+async function voidOrder(id){
+  const o=clone(get('orders',id));
+  const reason=prompt('Why are you voiding '+o.no+'? (e.g. duplicate entry, wrong customer)\n\nVoided orders stay in history but stop counting toward sales. Deducted stock goes back.');
+  if(reason===null) return; if(!reason.trim()){ toast('A reason is required to void.'); return; }
+  if(oDeducted(o)) await reverseOrder(o,'void');
+  o.voided=true; o.voidedAt=Date.now(); o.voidReason=reason.trim(); o.voidedBy=S.uid||'local';
+  await put('orders',o); await audit('void','orders',id,'Voided: '+reason.trim());
+  closeModal(); render(); toast(o.no+' voided');
+}
+
+/* =================== NEW SALE WIZARD =================== */
+let W=null;
+const WSTEPS=['Customer','Products','Discount & shipping','Payment','Review & confirm'];
+function newSale(presetCustomer){
+  const prods=all('products').filter(p=>p.status!=='inactive');
+  if(!prods.length){ openModal('New Sale', `<div class="empty"><h3>Add a product first</h3><p>A sale needs a product like “T15 Set” with its inventory recipe.</p>${isAdmin()?`<button class="btn primary" data-act="newProduct">${ic('plus')}Add product</button>`:'<p>Ask an admin to add products.</p>'}</div>`,'','narrow'); return; }
+  W={step:0, customerId:presetCustomer||'', walkin:false, newCust:null, cart:[], discount:0, shipping:0, notes:'', method:'', payStatus:'', paid:0, status:'Completed', date:today(), ack:false, cq:''};
+  wizRender();
+}
+function wizCust(){ return W.customerId?get('customers',W.customerId):null; }
+function wizPrice(p){ const c=wizCust(); return (c&&c.type==='Reseller'&&num(p.resellerPrice)>0)?num(p.resellerPrice):num(p.price); }
+function wizOrder(){ return {items:W.cart.map(l=>({productId:l.productId,name:get('products',l.productId)?.name||'',qty:num(l.qty),price:num(l.price),unitCogs:productCost(get('products',l.productId)||{})})), discount:num(W.discount), shipping:num(W.shipping), payments:[]}; }
+function wizRender(){
+  const st=W.step; let body='';
+  const head=`<div class="steps">${WSTEPS.map((_,i)=>`<span class="${i<=st?'on':''}"></span>`).join('')}</div><div class="step-t">Step ${st+1} of ${WSTEPS.length} · ${WSTEPS[st]}</div>`;
+  if(st===0){
+    const q=W.cq.toLowerCase();
+    const cs=all('customers').filter(c=>!q||(c.name+' '+(c.phone||'')).toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name));
+    body=`<h3 style="font-size:17px;margin-bottom:10px">Who is buying?</h3>
+    <label class="search" style="margin-bottom:12px">${ic('search')}<input type="search" id="wq" placeholder="Search customers" value="${esc(W.cq)}"></label>
+    <div class="pick">
+      <button data-act="wPickCust" data-id="" aria-pressed="${W.walkin}"><b>Walk-in / no name</b><span>Quick sale</span></button>
+      <button data-act="wNewCust" aria-pressed="${!!W.newCust}"><b>+ New customer</b><span>Add name and contact</span></button>
+      ${cs.map(c=>`<button data-act="wPickCust" data-id="${c.id}" aria-pressed="${W.customerId===c.id}"><b>${esc(c.name)}</b><span>${esc(c.type||'Direct')}${c.phone?' · '+esc(c.phone):''}</span></button>`).join('')}
+    </div>
+    ${W.newCust?`<div class="card" style="margin-top:12px;box-shadow:none"><div class="fg"><label class="f">Name <em>*</em><input type="text" id="wcName" value="${esc(W.newCust.name)}"></label><label class="f">Contact number<input type="tel" id="wcPhone" value="${esc(W.newCust.phone)}"></label>
+      <label class="f">Price type<select id="wcType"><option ${W.newCust.type==='Direct'?'selected':''}>Direct</option><option ${W.newCust.type==='Reseller'?'selected':''}>Reseller</option></select></label></div></div>`:''}`;
+  }
+  if(st===1){
+    const prods=all('products').filter(p=>p.status!=='inactive').sort((a,b)=>a.name.localeCompare(b.name));
+    const c=wizCust();
+    body=`<h3 style="font-size:17px;margin-bottom:4px">What are they buying?</h3><p class="small muted" style="margin-bottom:12px">Tap a product to add it.${c&&c.type==='Reseller'?' Reseller prices are applied for '+esc(c.name)+'.':''}</p>
+    <div class="cart" style="margin-bottom:14px">${W.cart.length?W.cart.map((l,i)=>{ const p=get('products',l.productId); const cg=productCost(p); const sh=shortages(needsFor([{productId:l.productId,qty:l.qty}]));
+      return `<div class="ci"><div><b style="font-weight:600">${esc(p.name)}</b><div class="xs muted">COGS ${money(cg)} each</div>
+        <label class="f" style="max-width:150px;margin-top:6px">Price each<input type="number" step="any" inputmode="decimal" data-w="price" data-i="${i}" value="${l.price}"></label>
+        ${num(l.price)<cg?`<div class="warnbox bad"><b>Below cost.</b> You’d lose ${money(cg-l.price)} per unit.</div>`:''}
+        ${sh.length?`<div class="warnbox bad"><b>Insufficient Inventory:</b> ${sh.map(x=>esc(x.it.name)+' (need '+qf(x.need)+', have '+qf(x.have)+')').join(', ')}</div>`:''}
+        ${!(p.components||[]).length?`<div class="warnbox">This product has no components, so no inventory will be deducted.</div>`:''}</div>
+        <div class="qty"><button data-act="wQty" data-i="${i}" data-d="-1" aria-label="Less">−</button><input type="number" inputmode="decimal" data-w="qty" data-i="${i}" value="${l.qty}" aria-label="Quantity"><button data-act="wQty" data-i="${i}" data-d="1" aria-label="More">+</button></div>
+        <button class="icon-btn" data-act="wDel" data-i="${i}" aria-label="Remove">${ic('x')}</button></div>`; }).join(''):'<p class="small muted">Nothing added yet.</p>'}</div>
+    <div class="pick" >${prods.map(p=>{ const a=productAvail(p); return `<button data-act="wAdd" data-id="${p.id}"><b>${esc(p.name)}</b><span>${num(wizPrice(p))>0?money(wizPrice(p)):'No price'} · ${a?a.n+' available':'no recipe'}</span></button>`; }).join('')}</div>`;
+  }
+  if(st===2){
+    const o=wizOrder();
+    body=`<h3 style="font-size:17px;margin-bottom:12px">Any discount or shipping fee?</h3>
+    <div class="fg"><label class="f">Discount (amount)<input type="number" step="any" inputmode="decimal" id="wDisc" value="${W.discount||''}" placeholder="0"></label>
+    <label class="f">Shipping fee charged to customer<input type="number" step="any" inputmode="decimal" id="wShip" value="${W.shipping||''}" placeholder="0"></label>
+    <label class="f">Order date<input type="date" id="wDate" value="${W.date}"></label>
+    <label class="f full">Notes<input type="text" id="wNotes" value="${esc(W.notes)}" placeholder="e.g. for customer Chica, courier tracking no."></label></div>
+    <div class="preview" style="margin-top:14px" id="wTot">${wizTotals()}</div>`;
+  }
+  if(st===3){
+    const t=oTotal(wizOrder());
+    body=`<h3 style="font-size:17px;margin-bottom:12px">How are they paying?</h3>
+    <label class="f" style="margin-bottom:6px">Payment method</label><div class="seg" style="margin-bottom:16px">${cfg().paymentMethods.map(m=>`<button data-act="wSet" data-k="method" data-v="${esc(m)}" aria-pressed="${W.method===m}">${esc(m)}</button>`).join('')}</div>
+    <label class="f" style="margin-bottom:6px">Payment status <em style="color:var(--bad)">*</em></label><div class="seg" style="margin-bottom:12px">${['Paid','Partially Paid','Unpaid'].map(m=>`<button data-act="wSet" data-k="payStatus" data-v="${m}" aria-pressed="${W.payStatus===m}">${m}</button>`).join('')}</div>
+    ${W.payStatus==='Partially Paid'?`<label class="f" style="max-width:200px;margin-bottom:12px">Amount received<input type="number" step="any" inputmode="decimal" id="wPaid" value="${W.paid||''}"></label>`:''}
+    <label class="f" style="margin:6px 0">Order status</label>
+    <div class="seg">${['Completed','Shipped','Packed','Processing','Pending'].map(m=>`<button data-act="wSet" data-k="status" data-v="${m}" aria-pressed="${W.status===m}">${m}</button>`).join('')}</div>
+    <p class="hint">${W.status==='Pending'?'Pending orders are saved without deducting inventory. Confirm them later from Orders.':'Inventory is deducted as soon as you confirm.'}</p>
+    <div class="preview" style="margin-top:14px"><dl class="kv"><dt>Order total</dt><dd style="font-size:18px;font-weight:600">${money(t)}</dd></dl></div>`;
+  }
+  if(st===4){
+    const o=wizOrder(), t=oTotal(o), cg=oCogs(o), needs=needsFor(o.items), sh=W.status==='Pending'?[]:shortages(needs);
+    const c=wizCust(); const cname=W.newCust?W.newCust.name:(c?c.name:'Walk-in');
+    const below=o.items.filter(l=>l.price<l.unitCogs);
+    body=`<h3 style="font-size:17px;margin-bottom:12px">Check and confirm</h3>
+    ${sh.length?`<div class="banner bad"><b>Insufficient Inventory</b><br>${sh.map(x=>`${esc(x.it.name)}: need ${qf(x.need)}, you have ${qf(x.have)}`).join('<br>')}
+      <label class="cb" style="margin-top:10px;color:var(--ink)"><input type="checkbox" id="wAck" ${W.ack?'checked':''}>I understand — save anyway and let stock go negative</label></div>`:''}
+    ${below.length?`<div class="banner"><b>Selling below cost:</b> ${below.map(l=>esc(l.name)).join(', ')}</div>`:''}
+    <div class="grid2" style="gap:14px">
+      <div class="card" style="box-shadow:none"><dl class="kv">
+        <dt>Customer</dt><dd>${esc(cname)}</dd><dt>Date</dt><dd>${fd(W.date)}</dd>
+        ${o.items.map(l=>`<dt>${qf(l.qty)} × ${esc(l.name)}</dt><dd>${money(l.qty*l.price)}</dd>`).join('')}
+        ${o.discount?`<dt>Discount</dt><dd>${money(-o.discount)}</dd>`:''}${o.shipping?`<dt>Shipping fee</dt><dd>${money(o.shipping)}</dd>`:''}
+        <dt><b>Total</b></dt><dd style="font-size:18px;font-weight:600">${money(t)}</dd>
+        <dt>Payment</dt><dd>${esc(W.method||'—')} · ${esc(W.payStatus)}${W.payStatus==='Partially Paid'?' ('+money(W.paid)+')':''}</dd>
+        <dt>Status</dt><dd>${esc(W.status)}</dd></dl></div>
+      <div class="card" style="box-shadow:none"><dl class="kv"><dt>COGS</dt><dd>${money(cg)}</dd><dt>Gross profit</dt><dd class="${t-cg>=0?'pos':'neg'}">${money(t-cg)}</dd><dt>Margin</dt><dd>${pct(margin(t,cg))}</dd></dl>
+        <h4 style="font-size:14px;margin:14px 0 8px">${W.status==='Pending'?'Inventory (not deducted while pending)':'Inventory to deduct'}</h4>
+        <div class="small">${Object.keys(needs).map(id=>{ const it=get('items',id), have=stOf(id).qty, after=have-needs[id]; return `<div class="row between" style="padding:4px 0;border-top:1px solid var(--line)"><span>${esc(it?.name||'?')}</span><span>−${qf(needs[id])} <span class="muted">→ ${qf(after)}</span>${after<0?' <span class="chip c-bad">short</span>':''}</span></div>`; }).join('')||'<span class="muted">No components.</span>'}</div></div>
+    </div>
+    <ul class="check" style="margin-top:14px">${['Total calculated','Inventory deducted'+(W.status==='Pending'?' when confirmed':''),'COGS calculated from current costs','Revenue and profit updated'].map(x=>`<li>${ic('check',2.4)}${x}</li>`).join('')}</ul>`;
+  }
+  const nextLbl = st===4 ? 'Confirm order' : 'Next';
+  const foot=`<button class="btn" data-act="${st===0?'close':'wBack'}">${st===0?'Cancel':'Back'}</button><div class="rt"><button class="btn primary" data-act="wNext">${nextLbl}</button></div>`;
+  const keepScroll = $('#modal').scrollTop;
+  openModal('New Sale', head+body, foot);
+  if(W._same) $('#modal').scrollTop=keepScroll; W._same=false;
+  const wq=$('#wq'); if(wq){ wq.addEventListener('input',e=>{ W.cq=e.target.value; W._same=true; const p=e.target.selectionStart; wizRender(); const n=$('#wq'); n.focus(); n.setSelectionRange(p,p); }); }
+  $('#mbody').addEventListener('input', wizInput);
+}
+function wizTotals(){ const o=wizOrder(), t=oTotal(o), cg=oCogs(o); return `<dl class="kv"><dt>Subtotal</dt><dd>${money(oSub(o))}</dd><dt>Total</dt><dd style="font-size:18px;font-weight:600">${money(t)}</dd><dt>Estimated profit</dt><dd class="${t-cg>=0?'pos':'neg'}">${money(t-cg)}</dd></dl>`; }
+function wizInput(e){
+  const t=e.target;
+  if(t.dataset.w){ const l=W.cart[+t.dataset.i]; l[t.dataset.w]=num(t.value); }
+  if(t.id==='wDisc') W.discount=num(t.value); if(t.id==='wShip') W.shipping=num(t.value);
+  if(t.id==='wNotes') W.notes=t.value; if(t.id==='wDate') W.date=t.value||today();
+  if(t.id==='wPaid') W.paid=num(t.value);
+  if(t.id==='wAck') W.ack=t.checked;
+  if(t.id==='wcName') W.newCust.name=t.value; if(t.id==='wcPhone') W.newCust.phone=t.value; if(t.id==='wcType') W.newCust.type=t.value;
+  if($('#wTot')) $('#wTot').innerHTML=wizTotals();
+}
+function wizNext(){
+  const st=W.step;
+  if(st===0){ if(W.newCust && !W.newCust.name.trim()){ toast('Enter the customer’s name.'); return; } if(!W.customerId && !W.walkin && !W.newCust){ toast('Choose a customer, walk-in, or add a new one.'); return; } }
+  if(st===1){ W.cart=W.cart.filter(l=>num(l.qty)>0); if(!W.cart.length){ toast('Add at least one product.'); wizRender(); return; } }
+  if(st===3){ if(!W.payStatus){ toast('Choose a payment status.'); return; } if(!W.method && W.payStatus!=='Unpaid'){ toast('Choose a payment method.'); return; } if(W.payStatus==='Partially Paid' && !(W.paid>0)){ toast('Enter the amount received.'); return; } }
+  if(st===4){ return wizConfirm(); }
+  W.step++; wizRender();
+}
+async function wizConfirm(){
+  const o0=wizOrder(); const needs=needsFor(o0.items);
+  if(W.status!=='Pending' && shortages(needs).length && !W.ack){ toast('Tick the box to confirm saving with insufficient inventory.'); return; }
+  let customerId=W.customerId;
+  if(W.newCust){ const c={id:uid('c_'),name:W.newCust.name.trim(),phone:W.newCust.phone||'',email:'',address:'',type:W.newCust.type||'Direct',notes:'',created:Date.now()}; await put('customers',c); await audit('create','customers',c.id,'Added customer '+c.name); customerId=c.id; }
+  const o={ id:uid('o_'), no:nextNo('orders','SO-',1000), date:W.date, customerId, customerName:'', items:o0.items, discount:o0.discount, shipping:o0.shipping,
+    paymentMethod:W.method||'', paymentStatus:W.payStatus, payments:[], status:W.status, notes:W.notes, created:Date.now(), by:S.uid||'local' };
+  const t=oTotal(o);
+  if(W.payStatus==='Paid') o.payments.push({id:uid('pay_'),date:W.date,amount:t,method:W.method});
+  if(W.payStatus==='Partially Paid') o.payments.push({id:uid('pay_'),date:W.date,amount:Math.min(W.paid,t),method:W.method});
+  if(CONFIRMED.has(o.status)) await deductOrder(o, o.date);
+  await put('orders',o);
+  await audit('create','orders',o.id,`Created ${o.no}: ${oTitle(o)} · ${money(t)} · ${o.status}`);
+  closeModal(); U.view='orders'; render(); toast(o.no+' saved'+(CONFIRMED.has(o.status)?' · inventory deducted':''));
+  setTimeout(()=>orderView(o.id),50);
+}
+</script>
+<script>
+/* =================== PRODUCTS & KITS =================== */
+function vProducts(){
+  const f=U.f.products||'active', q=qOf('products');
+  let ps=all('products').sort((a,b)=>a.name.localeCompare(b.name));
+  ps=ps.filter(p=>f==='all'?true:f==='inactive'?p.status==='inactive':p.status!=='inactive' && (f==='active'||p.type===f));
+  if(q) ps=ps.filter(p=>(p.name+' '+(p.sku||'')+' '+p.type).toLowerCase().includes(q));
+  const types=[...new Set(all('products').map(p=>p.type))];
+  return ph('Products & Kits','What you sell. Each product has a recipe of inventory components, so its cost and availability update automatically.', isAdmin()?`<button class="btn primary" data-act="newProduct">${ic('plus')}Add product</button>`:lockNote('Only admins edit products')) + `
+  <div class="tb">${searchBox('products','Search products')}</div>
+  <div style="margin-bottom:14px">${chipsF('products',[['active','Active'],...types.map(t=>[t,t]),['inactive','Archived'],['all','All']],f)}</div>
+  ${tableHTML([
+    {h:'Product',v:p=>`<span class="nm">${esc(p.name)}</span><div class="sub">${esc(p.sku||'')}${p.sku?' · ':''}${esc(p.type)}</div>`},
+    {h:'Selling price',num:1,v:p=>num(p.price)>0?money(p.price)+(num(p.resellerPrice)>0?`<div class="sub">Reseller ${money(p.resellerPrice)}</div>`:''):'<span class="chip c-warn">Not set</span>'},
+    {h:'COGS',num:1,v:p=>money(productCost(p))},
+    {h:'Gross profit',num:1,v:p=>{ const c=productCost(p); return num(p.price)>0?`<span class="${p.price<c?'neg':'pos'}">${money(p.price-c)}</span>`:'—'; }},
+    {h:'Margin',num:1,v:p=>{ const m=margin(num(p.price),productCost(p)); return m===null?'—':`<span class="chip ${m<0?'c-bad':m<0.2?'c-opt':'c-ok'}">${pct(m)}</span>`; }},
+    {h:'Available',num:1,v:p=>{ const a=productAvail(p); return a?`<b style="font-weight:600">${a.n}</b>${a.limit&&a.n<10?`<div class="sub">${esc(a.limit.name)}</div>`:''}`:'<span class="chip c-warn">No recipe</span>'; }},
+    {h:'Status',v:p=>p.status==='inactive'?'<span class="chip c-rest">Archived</span>':'<span class="chip c-ok">Active</span>'},
+  ], ps, {click:p=>`data-act="openProduct" data-id="${p.id}"`, empty:`<h3>No products</h3><p>Start with your T15 Set: add Tirz 15mg × 1, Bacwater 3ml × 1, and the packaging it uses.</p>${isAdmin()?`<button class="btn primary" data-act="newProduct">${ic('plus')}Add product</button>`:''}`})}`;
+}
+let PE=null;
+function productModal(id, copyOf){
+  const src=id?get('products',id):copyOf?get('products',copyOf):null;
+  PE=src?clone(src):{name:'',sku:'',type:'Set / Kit',description:'',price:'',resellerPrice:'',extraCost:'',components:[],status:'active'};
+  if(copyOf){ PE.name+=' (copy)'; PE.sku=''; }
+  PE._id=id||null;
+  const ro=!isAdmin();
+  const sold=id?all('orders').some(o=>o.items.some(l=>l.productId===id)):false;
+  const body=`${ro?`<div class="banner info">${ic('lock')} You can view products. Only admins can change prices and recipes.</div>`:''}
+  <fieldset ${ro?'disabled':''}><div class="fg">
+    <label class="f full">Product name <em>*</em><input type="text" id="peName" value="${esc(PE.name)}" placeholder="e.g. T15 Set"></label>
+    <label class="f">SKU<input type="text" id="peSku" value="${esc(PE.sku)}" placeholder="T15-SET"></label>
+    <label class="f">Product type<select id="peType">${PROD_TYPES.map(t=>`<option ${t===PE.type?'selected':''}>${t}</option>`).join('')}</select></label>
+    <label class="f">Status<select id="peStatus"><option value="active" ${PE.status!=='inactive'?'selected':''}>Active</option><option value="inactive" ${PE.status==='inactive'?'selected':''}>Archived</option></select></label>
+    <label class="f full">Description<input type="text" id="peDesc" value="${esc(PE.description)}" placeholder="What’s included, who it’s for"></label>
+  </div></fieldset>
+  <fieldset ${ro?'disabled':''}><legend>Price</legend><div class="fg">
+    <label class="f">Selling price<input type="number" step="any" inputmode="decimal" id="pePrice" value="${PE.price}"></label>
+    <label class="f">Reseller price (optional)<input type="number" step="any" inputmode="decimal" id="peRes" value="${PE.resellerPrice}"></label>
+    <label class="f">Extra cost per unit<input type="number" step="any" inputmode="decimal" id="peExtra" value="${PE.extraCost}" placeholder="e.g. admin fee 20"></label>
+  </div><p class="hint">Extra cost is for per-unit costs that aren’t inventory, like an admin fee. It’s added to COGS.</p></fieldset>
+  <fieldset ${ro?'disabled':''}><legend>Recipe (components)</legend>
+    <p class="small muted" style="margin-bottom:10px">Selling 1 of this product deducts these items. Use decimals for shared items, like 0.1 of a tape roll.</p>
+    <div class="lines" id="peComps"></div>
+    ${ro?'':`<button type="button" class="btn sm" data-act="peAdd">${ic('plus')}Add component</button>`}
+  </fieldset>
+  <div class="preview" id="peSum"></div>`;
+  const foot=ro?`<div class="rt"><button class="btn" data-act="close">Close</button></div>`:`${id?`<button class="btn" data-act="copyProduct" data-id="${id}">${ic('copy')}Duplicate</button>`:''}<div class="rt"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="saveProduct">${id?'Save changes':'Add product'}</button></div>`;
+  openModal(id?PE.name:'Add product', body, foot, '', id?(sold?'Has sales history — archive instead of deleting':''):'');
+  peComps(); peSum();
+  const mb=$('#mbody'); mb.addEventListener('input',peInput); mb.addEventListener('change',peInput);
+}
+function itemOptions(sel, withNew){
+  const items=all('items').filter(i=>i.status!=='inactive'||i.id===sel).sort((a,b)=>a.name.localeCompare(b.name));
+  return (withNew?`<option value="__new" ${sel==='__new'?'selected':''}>＋ New inventory item…</option>`:'')+ITEM_TYPES.map(t=>{ const g=items.filter(i=>i.type===t); return g.length?`<optgroup label="${t}">${g.map(i=>`<option value="${i.id}" ${i.id===sel?'selected':''}>${esc(i.name)} (${qf(stOf(i.id).qty)} ${esc(i.unit||'')})</option>`).join('')}</optgroup>`:''; }).join('');
+}
+function peComps(){
+  const ro=!isAdmin();
+  $('#peComps').innerHTML=PE.components.length?PE.components.map((c,i)=>{ const s=stOf(c.itemId); return `<div class="ln ln-comp" data-i="${i}">
+    <label class="f sel">Inventory item<select data-f="itemId" ${ro?'disabled':''}>${itemOptions(c.itemId)}</select></label>
+    <label class="f">Qty<input type="number" step="any" inputmode="decimal" data-f="qty" value="${c.qty}" ${ro?'disabled':''}></label>
+    <label class="f">Unit cost<input type="text" readonly tabindex="-1" value="${money(s.avg)}"></label>
+    <label class="f">Line cost<input type="text" readonly tabindex="-1" data-lc value="${money(s.avg*num(c.qty))}"></label>
+    ${ro?'<span></span>':`<button type="button" class="icon-btn" data-act="peDel" data-i="${i}" aria-label="Remove component">${ic('x')}</button>`}</div>`; }).join(''):`<div class="warnbox">No components yet. Without a recipe, selling this product won’t deduct inventory.</div>`;
+}
+function peSum(){
+  const c=productCost(PE), pr=num(PE.price), rs=num(PE.resellerPrice), a=productAvail(PE);
+  const row=(l,p)=>p>0?`<dt>${l}</dt><dd class="${p<c?'neg':''}">${money(p-c)} profit · ${pct(margin(p,c))}</dd>`:'';
+  $('#peSum').innerHTML=`<dl class="kv"><dt>COGS (auto)</dt><dd style="font-size:18px;font-weight:600">${money(c)}</dd>${row('At selling price',pr)}${row('At reseller price',rs)}
+  <dt>Available to sell</dt><dd>${a?a.n+(a.limit?' — limited by '+esc(a.limit.name):''):'—'}</dd></dl>
+  ${pr>0&&pr<c?`<div class="warnbox bad"><b>Selling price is lower than COGS.</b></div>`:''}${rs>0&&rs<c?`<div class="warnbox bad"><b>Reseller price is lower than COGS.</b></div>`:''}
+  ${c>0?`<p class="hint">For a 40% margin, price at ${money(Math.ceil(c/0.6/10)*10)} or more.</p>`:''}`;
+}
+function peInput(e){
+  const t=e.target, ln=t.closest('.ln');
+  if(ln){ const i=+ln.dataset.i; if(t.dataset.f==='itemId'){ PE.components[i].itemId=t.value; peComps(); } if(t.dataset.f==='qty'){ PE.components[i].qty=num(t.value); const lc=ln.querySelector('[data-lc]'); if(lc) lc.value=money(stOf(PE.components[i].itemId).avg*num(t.value)); } }
+  if(t.id==='pePrice') PE.price=num(t.value); if(t.id==='peRes') PE.resellerPrice=num(t.value); if(t.id==='peExtra') PE.extraCost=num(t.value);
+  peSum();
+}
+async function saveProduct(){
+  const name=$('#peName').value.trim(); if(!name){ toast('Add a product name.'); return; }
+  const comps=PE.components.filter(c=>get('items',c.itemId)&&num(c.qty)>0);
+  const d={name, sku:$('#peSku').value.trim(), type:$('#peType').value, status:$('#peStatus').value, description:$('#peDesc').value.trim(),
+    price:num($('#pePrice').value), resellerPrice:num($('#peRes').value), extraCost:num($('#peExtra').value), components:comps};
+  if(!comps.length && !confirm('This product has no components, so selling it won’t deduct any inventory. Save anyway?')) return;
+  const c=productCost(d); if(d.price>0 && d.price<c && !confirm(`Selling price ${money(d.price)} is below COGS ${money(c)}. Save anyway?`)) return;
+  if(PE._id){ const old=get('products',PE._id); await put('products',{...old,...d}); await audit('update','products',PE._id,`Updated product ${name}`+(old.price!==d.price?` (price ${money(old.price)} → ${money(d.price)})`:'')); }
+  else { const p={id:uid('p_'),...d,created:Date.now()}; await put('products',p); await audit('create','products',p.id,'Added product '+name); }
+  closeModal(); render(); toast('Product saved');
+}
+
+/* =================== INVENTORY =================== */
+function vInventory(){
+  const tab=U.sub.inventory||'items';
+  const tabs=`<div class="seg" style="margin-bottom:14px">${[['items','Items'],['ledger','Ledger'],['expiring','Expiry']].map(([k,l])=>`<button data-act="sub" data-k="inventory" data-v="${k}" aria-pressed="${tab===k}">${l}</button>`).join('')}</div>`;
+  const acts=`${canAdjust()?`<button class="btn" data-act="count">${ic('clip')}Stock count</button><button class="btn" data-act="newAdjust">${ic('sliders')}Adjustment</button>`:''}${isAdmin()?`<button class="btn primary" data-act="newItem">${ic('plus')}Add item</button>`:''}`;
+  let body='';
+  if(tab==='items'){
+    const f=U.f.inventory||'all', q=qOf('inventory');
+    let items=all('items').sort((a,b)=>ITEM_TYPES.indexOf(a.type)-ITEM_TYPES.indexOf(b.type)||a.name.localeCompare(b.name));
+    const exIds=new Set(expiringLots(num(cfg().expiryWarnDays)||90).map(e=>e.it.id));
+    const F={all:i=>i.status!=='inactive', low:i=>itemStatus(i)[2]==='low', out:i=>['out','neg'].includes(itemStatus(i)[2]), ok:i=>itemStatus(i)[2]==='ok', expiring:i=>exIds.has(i.id), inactive:i=>i.status==='inactive'};
+    for(const t of ITEM_TYPES) F[t]=i=>i.type===t && i.status!=='inactive';
+    const n=k=>items.filter(F[k]).length;
+    items=items.filter(F[f]||F.all);
+    if(q) items=items.filter(i=>(i.name+' '+(i.sku||'')+' '+i.type+' '+(i.category||'')).toLowerCase().includes(q));
+    const val=items.reduce((s,i)=>s+stOf(i.id).value,0);
+    body=`<div class="tb">${searchBox('inventory','Search inventory')}</div>
+    <div style="margin-bottom:14px">${chipsF('inventory',[['all','All'],['out','Out of stock',n('out')],['low','Low stock',n('low')],['ok','Healthy'],['expiring','Expiring',n('expiring')],...ITEM_TYPES.filter(t=>n(t)).map(t=>[t,t]),['inactive','Inactive']],f)}</div>
+    ${tableHTML([
+      {h:'Item',v:i=>`<span class="nm">${esc(i.name)}</span><div class="sub">${esc(i.sku||'')}${i.sku?' · ':''}${esc(i.type)}</div>`},
+      {h:'On hand',num:1,v:i=>`<b style="font-weight:600" class="${stOf(i.id).qty<0?'neg':''}">${qf(stOf(i.id).qty)}</b> <span class="muted small">${esc(i.unit||'')}</span>`},
+      {h:'Avg cost',num:1,v:i=>stOf(i.id).avg>0?money(stOf(i.id).avg):'<span class="chip c-warn">None</span>'},
+      {h:'Value',num:1,v:i=>money(stOf(i.id).value)},
+      {h:'Reorder at',num:1,v:i=>num(i.reorderLevel)?qf(i.reorderLevel):'—'},
+      {h:'Status',v:i=>{ const [l,c]=itemStatus(i); return `<span class="chip ${c}"><i></i>${l}</span>`+(exIds.has(i.id)?' <span class="chip c-bad">Expiring</span>':''); }},
+    ], items, {click:i=>`data-act="openItem" data-id="${i.id}"`, foot:items.length?['Total','','','',money(val),'']:null,
+      empty:`<h3>No items here</h3><p>Inventory items are the components you stock: peptides, bac water, syringes, packaging.</p>${isAdmin()?`<button class="btn primary" data-act="newItem">${ic('plus')}Add item</button>`:''}`})}`;
+  }
+  if(tab==='ledger'){
+    const fi=U.f.ledgerItem||'', ft=U.f.ledgerType||'';
+    const rows=[];
+    for(const it of all('items')){ if(fi && it.id!==fi) continue; for(const t of stOf(it.id).txns){ if(ft && t.mv.type!==ft) continue; rows.push({it,t}); } }
+    rows.sort((a,b)=>mvSort(b.t.mv,a.t.mv) || (b.t.bal-a.t.bal));
+    body=`<div class="hlp">Every change to stock is a transaction here. Quantities are calculated from these entries only — purchases add, sales and adjustments subtract.</div>
+    <div class="tb"><label class="f" style="min-width:220px;flex:1">Item<select id="ledItem"><option value="">All items</option>${itemOptions(fi)}</select></label>
+    <label class="f" style="min-width:180px">Transaction<select id="ledType"><option value="">All types</option>${Object.entries(MV_LABEL).map(([k,l])=>`<option value="${k}" ${ft===k?'selected':''}>${l}</option>`).join('')}</select></label></div>
+    ${tableHTML([
+      {h:'Date',v:x=>fd(x.t.mv.date)},{h:'Item',v:x=>esc(x.it.name)},{h:'Transaction',cls:'wrapc',v:x=>esc(mvLabel(x.t.mv))},
+      {h:'Qty in',num:1,v:x=>x.t.in?`<span class="pos">+${qf(x.t.in)}</span>`:''},{h:'Qty out',num:1,v:x=>x.t.out?`<span class="neg">−${qf(x.t.out)}</span>`:''},
+      {h:'Balance',num:1,v:x=>`<b style="font-weight:600">${qf(x.t.bal)}</b>`},{h:'Unit cost',num:1,v:x=>x.t.ln.unitCost!=null?money(x.t.ln.unitCost):'—'},
+    ], rows.slice(0,500), {click:x=>`data-act="openMv" data-id="${x.t.mv.id}"`, empty:'<h3>No transactions yet</h3><p>Record a purchase or add an item with an opening balance.</p>'})}
+    ${rows.length>500?'<p class="hint">Showing the latest 500. Filter by item to see more.</p>':''}`;
+  }
+  if(tab==='expiring'){
+    const lots=expiringLots(100000).filter(e=>e.d<=90);
+    const allLots=[]; for(const it of all('items')) for(const lot of stOf(it.id).lots) allLots.push({it,lot});
+    const noExp=allLots.filter(x=>!x.lot.exp && ['Peptide','Bacwater'].includes(x.it.type));
+    const b=k=>lots.filter(e=>k==='x'?e.d<0:k==='30'?e.d>=0&&e.d<=30:k==='60'?e.d>30&&e.d<=60:e.d>60).length;
+    body=`<div class="kpis" style="margin-bottom:14px"><div class="kpi"><span>Expired</span><b class="neg">${b('x')}</b></div><div class="kpi"><span>Within 30 days</span><b>${b('30')}</b></div><div class="kpi"><span>31–60 days</span><b>${b('60')}</b></div><div class="kpi"><span>61–90 days</span><b>${b('90')}</b></div></div>
+    ${tableHTML([{h:'Item',v:e=>`<span class="nm">${esc(e.it.name)}</span>`},{h:'Batch / lot',v:e=>esc(e.lot.lot||'—')},{h:'Expires',v:e=>fd(e.lot.exp)},{h:'When',v:e=>{ const [l,c]=expBucket(e.d); return `<span class="chip ${c}">${l}</span> <span class="small muted">${e.d<0?Math.abs(e.d)+' days ago':e.d+' days'}</span>`; }},{h:'Remaining',num:1,v:e=>qf(e.lot.qty)},{h:'Supplier',v:e=>esc(get('suppliers',e.lot.supplierId)?.name||'—')}],
+      lots, {click:e=>`data-act="openItem" data-id="${e.it.id}"`, empty:'<h3>Nothing expiring in the next 90 days</h3><p>Expiry is tracked per batch. Add the lot number and expiry date when you record a purchase.</p>'})}
+    ${noExp.length?`<p class="hint" style="margin-top:10px">${noExp.length} batch${noExp.length>1?'es':''} of peptides or bac water have no expiry date (e.g. ${esc(noExp.slice(0,3).map(x=>x.it.name).join(', '))}). Add one from the item page to track it.</p>`:''}
+    ${lots.some(e=>e.d<0)&&canAdjust()?`<p class="hint">Write off expired stock with an <a href="#" data-act="newAdjust">adjustment</a> using the reason “Expired”.</p>`:''}`;
+  }
+  return ph('Inventory','The components you stock. Quantity comes from the ledger, never typed in directly.', acts) + tabs + body;
+}
+function itemView(id){
+  const it=get('items',id); if(!it) return; const s=stOf(id); const [sl,sc]=itemStatus(it);
+  const used=all('products').filter(p=>(p.components||[]).some(c=>c.itemId===id));
+  const sup=get('suppliers',it.supplierId);
+  const body=`<div class="row wr" style="gap:6px;margin-bottom:12px"><span class="chip ${sc}"><i></i>${sl}</span><span class="chip c-rest">${esc(it.type)}</span>${it.category?`<span class="chip c-rest">${esc(it.category)}</span>`:''}${it.sku?`<span class="chip c-rest">SKU ${esc(it.sku)}</span>`:''}</div>
+  <div class="mini" style="margin-bottom:14px"><div><span>On hand</span><b class="${s.qty<0?'neg':''}">${qf(s.qty)} ${esc(it.unit||'')}</b></div><div><span>Avg cost</span><b>${money(s.avg)}</b></div><div><span>Value</span><b>${money(s.value)}</b></div><div><span>Reorder at / qty</span><b>${num(it.reorderLevel)?qf(it.reorderLevel):'—'} / ${num(it.reorderQty)?qf(it.reorderQty):'—'}</b></div></div>
+  <dl class="kv"><dt>Selling price</dt><dd>${num(it.sellPrice)>0?money(it.sellPrice):'—'}</dd><dt>Main supplier</dt><dd>${esc(sup?.name||'—')}</dd>
+  <dt>Last purchased</dt><dd>${s.lastIn?fd(s.lastIn.date)+' · '+qf(s.lastIn.qty)+' @ '+money(s.lastIn.unitCost):'—'}</dd>
+  <dt>Used in</dt><dd>${used.length?used.map(p=>esc(p.name)).join(', '):'No products'}</dd>${it.notes?`<dt>Notes</dt><dd>${esc(it.notes)}</dd>`:''}</dl>
+  ${s.lots.length?`<h3 style="font-size:15px;margin:16px 0 8px">Batches on hand</h3>${tableHTML([{h:'Lot',v:l=>esc(l.lot||'—')},{h:'Expires',v:l=>l.exp?fd(l.exp)+' '+(daysTo(l.exp)<=90?`<span class="chip ${expBucket(daysTo(l.exp))[1]}">${expBucket(daysTo(l.exp))[0]}</span>`:''):'—'},{h:'Remaining',num:1,v:l=>qf(l.qty)},{h:'Received',v:l=>fd(l.date)},{h:'Supplier',v:l=>esc(get('suppliers',l.supplierId)?.name||'—')}],s.lots)}`:''}
+  <h3 style="font-size:15px;margin:16px 0 8px">Transaction history</h3>
+  ${tableHTML([{h:'Date',v:t=>fd(t.mv.date)},{h:'Transaction',cls:'wrapc',v:t=>esc(mvLabel(t.mv))},{h:'In',num:1,v:t=>t.in?'+'+qf(t.in):''},{h:'Out',num:1,v:t=>t.out?'−'+qf(t.out):''},{h:'Balance',num:1,v:t=>`<b style="font-weight:600">${qf(t.bal)}</b>`}],
+    [...s.txns].reverse(), {click:t=>`data-act="openMv" data-id="${t.mv.id}"`, empty:'<p>No transactions yet.</p>'})}`;
+  const foot=`${isAdmin()?`<button class="btn" data-act="editItem" data-id="${id}">Edit details</button>`:''}<div class="rt">${canAdjust()?`<button class="btn dark" data-act="newAdjust" data-id="${id}">${ic('sliders')}Adjust stock</button>`:lockNote('Adjustments need admin permission')}${isAdmin()?`<button class="btn primary" data-act="newPurchase" data-id="${id}">${ic('truck')}Restock</button>`:''}</div>`;
+  openModal(it.name, body, foot, 'wide');
+}
+function itemForm(id){
+  const it=id?get('items',id):{name:'',sku:'',type:'Peptide',category:'',unit:'vial',defaultCost:'',sellPrice:'',supplierId:'',reorderLevel:'',reorderQty:'',status:'active',notes:''};
+  const c=cfg();
+  const body=`<fieldset><div class="fg">
+    <label class="f full">Item name <em>*</em><input type="text" id="itName" value="${esc(it.name)}" placeholder="e.g. Tirz 15mg"></label>
+    <label class="f">SKU<input type="text" id="itSku" value="${esc(it.sku)}" placeholder="TIRZ-15"></label>
+    <label class="f">Item type<select id="itType">${ITEM_TYPES.map(t=>`<option ${t===it.type?'selected':''}>${t}</option>`).join('')}</select></label>
+    <label class="f">Category<select id="itCat"><option value="">—</option>${c.itemCategories.map(x=>`<option ${x===it.category?'selected':''}>${esc(x)}</option>`).join('')}</select></label>
+    <label class="f">Unit<select id="itUnit">${[...new Set([...c.units,it.unit].filter(Boolean))].map(u=>`<option ${u===it.unit?'selected':''}>${esc(u)}</option>`).join('')}</select></label>
+    <label class="f">Default cost per unit<input type="number" step="any" inputmode="decimal" id="itCost" value="${it.defaultCost}"></label>
+    <label class="f">Selling price (if sold alone)<input type="number" step="any" inputmode="decimal" id="itSell" value="${it.sellPrice}"></label>
+    <label class="f">Main supplier<select id="itSup"><option value="">—</option>${all('suppliers').sort((a,b)=>a.name.localeCompare(b.name)).map(s=>`<option value="${s.id}" ${s.id===it.supplierId?'selected':''}>${esc(s.name)}</option>`).join('')}</select></label>
+    <label class="f">Reorder level<input type="number" step="any" inputmode="decimal" id="itRL" value="${it.reorderLevel}" placeholder="Warn at"></label>
+    <label class="f">Reorder quantity<input type="number" step="any" inputmode="decimal" id="itRQ" value="${it.reorderQty}" placeholder="Usual order"></label>
+    <label class="f">Status<select id="itStatus"><option value="active" ${it.status!=='inactive'?'selected':''}>Active</option><option value="inactive" ${it.status==='inactive'?'selected':''}>Inactive</option></select></label>
+    <label class="f full">Notes<input type="text" id="itNotes" value="${esc(it.notes)}"></label>
+  </div><p class="hint">Default cost is used only until the first purchase. After that, cost is the running average of what you paid.</p></fieldset>
+  ${id?`<div class="hlp">Quantity can’t be edited here. Use a purchase, an adjustment, or a stock count so every change has a reason.</div>`:`
+  <fieldset><legend>Opening balance (optional)</legend><p class="small muted" style="margin-bottom:10px">How many do you have right now? This becomes the first ledger entry.</p><div class="fg">
+    <label class="f">Quantity on hand<input type="number" step="any" inputmode="decimal" id="itQty" placeholder="0"></label>
+    <label class="f">Lot / batch no.<input type="text" id="itLot"></label>
+    <label class="f">Expiration date<input type="date" id="itExp"></label>
+    <label class="f">As of date<input type="date" id="itDate" value="${today()}"></label></div></fieldset>`}`;
+  openModal(id?'Edit '+it.name:'Add inventory item', body, `<div class="rt"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="saveItem" data-id="${id||''}">${id?'Save changes':'Add item'}</button></div>`);
+}
+async function saveItem(id){
+  const name=$('#itName').value.trim(); if(!name){ toast('Add an item name.'); return; }
+  const d={name, sku:$('#itSku').value.trim(), type:$('#itType').value, category:$('#itCat').value, unit:$('#itUnit').value, defaultCost:num($('#itCost').value), sellPrice:num($('#itSell').value),
+    supplierId:$('#itSup').value, reorderLevel:num($('#itRL').value), reorderQty:num($('#itRQ').value), status:$('#itStatus').value, notes:$('#itNotes').value.trim()};
+  if(id){ const old=get('items',id); await put('items',{...old,...d}); await audit('update','items',id,'Updated item '+name+(old.defaultCost!==d.defaultCost?` (default cost ${money(old.defaultCost)} → ${money(d.defaultCost)})`:'')); closeModal(); render(); itemView(id); return; }
+  const it={id:uid('i_'),...d,created:Date.now()}; await put('items',it);
+  const q=num($('#itQty').value);
+  if(q){ await put('movements', mkMovement('opening', $('#itDate').value||today(), [{itemId:it.id, qty:q, unitCost:d.defaultCost, lot:$('#itLot').value.trim(), exp:$('#itExp').value}], {note:'Opening balance', supplierId:d.supplierId})); }
+  await audit('create','items',it.id,'Added item '+name+(q?` with opening balance ${qf(q)}`:''));
+  closeModal(); render(); toast('Item added');
+}
+function mvView(id){
+  const mv=get('movements',id); if(!mv) return;
+  const ref=mv.ref; const refBtn=ref?`<button class="btn" data-act="${ref.col==='orders'?'openOrder':'openPurchase'}" data-id="${ref.id}">Open ${ref.col==='orders'?'order':'purchase'}</button>`:'';
+  const body=`<dl class="kv" style="margin-bottom:14px"><dt>Type</dt><dd>${esc(mvLabel(mv))}</dd><dt>Date</dt><dd>${fd(mv.date)}</dd><dt>Recorded</dt><dd>${fdt(mv.created||0)} · ${esc(personName(mv.by))}</dd>${mv.note?`<dt>Notes</dt><dd>${esc(mv.note)}</dd>`:''}</dl>
+  ${tableHTML([{h:'Item',v:l=>esc(get('items',l.itemId)?.name||'?')},{h:'Qty',num:1,v:l=>`<span class="${l.qty<0?'neg':'pos'}">${l.qty>0?'+':''}${qf(l.qty)}</span>`},{h:'Unit cost',num:1,v:l=>money(l.unitCost)},{h:'Value',num:1,v:l=>money(l.qty*l.unitCost)},{h:'Lot / expiry',v:l=>esc([l.lot,l.exp?fd(l.exp):''].filter(Boolean).join(' · ')||'—')}], mv.lines)}`;
+  openModal('Inventory transaction', body, `<div class="rt">${refBtn}<button class="btn" data-act="close">Close</button></div>`);
+}
+function adjustModal(itemId){
+  if(!canAdjust()){ toast('Only admins can adjust inventory.'); return; }
+  const body=`<div class="fg">
+    <label class="f full">Item <em>*</em><select id="adItem">${itemOptions(itemId||'')}</select></label></div>
+    <div class="seg" id="adMode" style="margin:14px 0">${[['remove','Remove stock'],['add','Add stock'],['set','Set counted quantity']].map(([k,l],i)=>`<button type="button" data-mode="${k}" aria-pressed="${i===0}">${l}</button>`).join('')}</div>
+    <div class="fg"><label class="f">Quantity <em>*</em><input type="number" step="any" inputmode="decimal" id="adQty"></label>
+    <label class="f">Reason <em>*</em><select id="adReason"><option value="">Choose…</option>${ADJ_REASONS.map(r=>`<option>${r}</option>`).join('')}</select></label>
+    <label class="f">Date<input type="date" id="adDate" value="${today()}"></label>
+    <label class="f full">Notes<input type="text" id="adNotes" placeholder="What happened? e.g. vial cracked in transit"></label></div>
+    <div class="preview" id="adSum" style="margin-top:14px"></div>`;
+  openModal('Inventory adjustment', body, `<div class="rt"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="saveAdjust">Save adjustment</button></div>`, 'narrow');
+  const upd=()=>{ const id=$('#adItem').value, s=stOf(id), m=$('#adMode [aria-pressed="true"]').dataset.mode, q=num($('#adQty').value); const d=m==='add'?q:m==='remove'?-q:q-s.qty;
+    $('#adSum').innerHTML=`<dl class="kv"><dt>Current</dt><dd>${qf(s.qty)}</dd><dt>Change</dt><dd class="${d<0?'neg':'pos'}">${d>0?'+':''}${qf(d)}</dd><dt>New balance</dt><dd style="font-weight:600">${qf(s.qty+d)}</dd><dt>Value</dt><dd>${money(d*s.avg)}</dd></dl>${s.qty+d<0?'<div class="warnbox bad"><b>This makes stock negative.</b></div>':''}`; };
+  $('#adMode').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; $$('#adMode button').forEach(x=>x.setAttribute('aria-pressed',x===b)); if(b.dataset.mode==='set') $('#adReason').value='Incorrect count'; upd(); });
+  $('#mbody').addEventListener('input',upd); $('#mbody').addEventListener('change',upd); upd();
+}
+async function saveAdjust(){
+  const id=$('#adItem').value, s=stOf(id), m=$('#adMode [aria-pressed="true"]').dataset.mode, q=num($('#adQty').value), reason=$('#adReason').value;
+  if(!id){ toast('Choose an item.'); return; } if(!reason){ toast('Choose a reason — every adjustment needs one.'); return; }
+  const d=r4(m==='add'?q:m==='remove'?-q:q-s.qty); if(!d){ toast('Nothing changes with that quantity.'); return; }
+  if(s.qty+d<0 && !confirm('This makes stock negative. Save anyway?')) return;
+  const mv=mkMovement('adjustment', $('#adDate').value||today(), [{itemId:id, qty:d, unitCost:s.avg}], {reason, note:$('#adNotes').value.trim()});
+  await put('movements',mv); await audit('adjust','items',id,`${get('items',id).name}: ${d>0?'+':''}${qf(d)} (${reason})${mv.note?' — '+mv.note:''}`);
+  closeModal(); render(); toast('Adjustment saved');
+}
+function countModal(){
+  if(!canAdjust()){ toast('Only admins can adjust inventory.'); return; }
+  const items=all('items').filter(i=>i.status!=='inactive').sort((a,b)=>ITEM_TYPES.indexOf(a.type)-ITEM_TYPES.indexOf(b.type)||a.name.localeCompare(b.name));
+  const body=`<div class="hlp">Count what’s physically on your shelf. Leave a box empty if it already matches. Differences are saved as one adjustment with the reason “Incorrect count”.</div>
+  <div class="tbl-wrap flat"><table class="t"><thead><tr><th>Item</th><th class="num">In app</th><th>Counted</th></tr></thead><tbody>
+  ${items.map(i=>`<tr><td class="wrapc">${esc(i.name)}<div class="sub">${esc(i.type)}</div></td><td class="num">${qf(stOf(i.id).qty)}</td><td style="width:120px"><input type="number" step="any" inputmode="decimal" data-cnt="${i.id}" placeholder="${qf(stOf(i.id).qty)}" aria-label="Counted ${esc(i.name)}" style="padding:8px 10px"></td></tr>`).join('')}</tbody></table></div>
+  <label class="f" style="margin-top:12px">Notes<input type="text" id="cntNote" placeholder="e.g. Monthly count, October"></label>`;
+  openModal('Stock count', body, `<div class="rt"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="saveCount">Save count</button></div>`);
+}
+async function saveCount(){
+  const lines=[];
+  $$('[data-cnt]').forEach(inp=>{ if(inp.value.trim()==='') return; const id=inp.dataset.cnt, s=stOf(id), d=r4(num(inp.value)-s.qty); if(d) lines.push({itemId:id, qty:d, unitCost:s.avg}); });
+  if(!lines.length){ closeModal(); toast('Everything matched'); return; }
+  const mv=mkMovement('adjustment', today(), lines, {reason:'Incorrect count', note:$('#cntNote').value.trim()||'Stock count'});
+  await put('movements',mv); await audit('adjust','movements',mv.id,`Stock count: ${lines.length} item${lines.length>1?'s':''} corrected`);
+  closeModal(); render(); toast(lines.length+' item'+(lines.length>1?'s':'')+' corrected');
+}
+
+/* =================== PURCHASES =================== */
+function vPurchases(){
+  const q=qOf('purchases'), f=U.f.purchases||'all';
+  let ps=all('purchases').sort((a,b)=>b.date.localeCompare(a.date)||(b.created||0)-(a.created||0));
+  const F={all:p=>!p.voided, unpaid:p=>!p.voided&&puTotal(p)-num(p.paid)>0.004, void:p=>p.voided};
+  ps=ps.filter(F[f]);
+  if(q) ps=ps.filter(p=>(p.no+' '+supName(p)+' '+p.lines.map(l=>l.name).join(' ')).toLowerCase().includes(q));
+  return ph('Purchases','Stock you buy. Recording a purchase adds it to inventory and updates the average cost.', isAdmin()?`<button class="btn primary" data-act="newPurchase">${ic('plus')}Add Purchase</button>`:lockNote()) + `
+  <div class="tb">${searchBox('purchases','Search supplier, item, PO no.')}</div>
+  <div style="margin-bottom:14px">${chipsF('purchases',[['all','All'],['unpaid','Unpaid to supplier'],['void','Voided']],f)}</div>
+  ${tableHTML([
+    {h:'PO',v:p=>`<span class="nm">${esc(p.no)}</span>${p.imported?'<div class="sub">Imported</div>':''}`},{h:'Date',v:p=>fd(p.date)},{h:'Supplier',v:p=>esc(supName(p))},
+    {h:'Items',cls:'wrapc',v:p=>esc(p.lines.map(l=>qf(l.qty)+'× '+(get('items',l.itemId)?.name||l.name)).join(', '))},
+    {h:'Total',num:1,v:p=>money(puTotal(p))},
+    {h:'Payment',v:p=>p.voided?'<span class="chip c-rest">Voided</span>':payChip(p.paymentStatus)},
+  ], ps, {click:p=>`data-act="openPurchase" data-id="${p.id}"`, rowCls:p=>p.voided?'void':'', foot:ps.length?['','','','Total',money(ps.filter(p=>!p.voided).reduce((s,p)=>s+puTotal(p),0)),'']:null,
+    empty:`<h3>No purchases</h3><p>Example: 10 × Tirz 15mg at ₱359 each. Inventory goes up by 10 and the cost is recorded.</p>${isAdmin()?`<button class="btn primary" data-act="newPurchase">${ic('plus')}Add Purchase</button>`:''}`})}`;
+}
+let PU=null;
+function purchaseModal(itemId){
+  if(!isAdmin()){ toast('Only admins can record purchases.'); return; }
+  const first=itemId||all('items').filter(i=>i.status!=='inactive').sort((a,b)=>a.name.localeCompare(b.name))[0]?.id||'__new';
+  PU={lines:[{itemId:first,qty:'',unitCost:itemId?stOf(itemId).avg||'':'',lot:'',exp:'',nName:'',nType:'Peptide',nUnit:'vial'}], supplierId:get('items',itemId)?.supplierId||'', newSup:''};
+  const sups=all('suppliers').sort((a,b)=>a.name.localeCompare(b.name));
+  const body=`<fieldset><div class="fg"><label class="f">Purchase date<input type="date" id="puDate" value="${today()}"></label>
+    <label class="f">Supplier<select id="puSup"><option value="">—</option><option value="__new">＋ New supplier…</option>${sups.map(s=>`<option value="${s.id}" ${s.id===PU.supplierId?'selected':''}>${esc(s.name)}</option>`).join('')}</select></label>
+    <label class="f" id="puNewSupW" style="display:none">New supplier name<input type="text" id="puNewSup"></label></div></fieldset>
+  <fieldset><legend>Items received</legend><div class="lines" id="puLines"></div><button type="button" class="btn sm" data-act="puAdd">${ic('plus')}Add line</button></fieldset>
+  <fieldset><div class="fg"><label class="f">Shipping & fees<input type="number" step="any" inputmode="decimal" id="puFees" placeholder="0"></label>
+    <label class="f">Payment status<select id="puPay"><option>Paid</option><option>Partially Paid</option><option>Unpaid</option></select></label>
+    <label class="f" id="puPaidW" style="display:none">Amount paid<input type="number" step="any" inputmode="decimal" id="puPaid"></label>
+    <label class="f">Payment method<select id="puMethod">${cfg().paymentMethods.map(m=>`<option>${esc(m)}</option>`).join('')}</select></label>
+    <label class="f full">Notes<input type="text" id="puNotes" placeholder="Order no., delivery issues"></label></div>
+    <label class="cb" style="margin-top:10px"><input type="checkbox" id="puAlloc" checked>Spread shipping & fees into each item’s cost (recommended)</label></fieldset>
+  <div class="preview" id="puSum"></div>`;
+  openModal('Add purchase', body, `<div class="rt"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="savePurchase">Save purchase</button></div>`, 'wide');
+  puLines(); puSum();
+  const mb=$('#mbody'); mb.addEventListener('input',puInput); mb.addEventListener('change',puInput);
+}
+function puLines(){
+  $('#puLines').innerHTML=PU.lines.map((l,i)=>`<div class="ln ln-pur" data-i="${i}">
+    <label class="f sel">Item<select data-f="itemId">${itemOptions(l.itemId,true)}</select></label>
+    <label class="f">Qty<input type="number" step="any" inputmode="decimal" data-f="qty" value="${l.qty}"></label>
+    <label class="f">Unit cost<input type="number" step="any" inputmode="decimal" data-f="unitCost" value="${l.unitCost}"></label>
+    <label class="f">Line total<input type="number" step="any" inputmode="decimal" data-f="total" value="${l.qty&&l.unitCost?r2(num(l.qty)*num(l.unitCost)):''}"></label>
+    <button type="button" class="icon-btn" data-act="puDel" data-i="${i}" aria-label="Remove line" ${PU.lines.length<2?'disabled':''}>${ic('x')}</button>
+    <label class="f x2">Lot / batch no.<input type="text" data-f="lot" value="${esc(l.lot)}"></label>
+    <label class="f x2">Expiration date<input type="date" data-f="exp" value="${l.exp}"></label>
+    ${l.itemId==='__new'?`<div class="newi"><label class="f">New item name<input type="text" data-f="nName" value="${esc(l.nName)}" placeholder="e.g. Tirz 60mg"></label>
+      <label class="f">Type<select data-f="nType">${ITEM_TYPES.map(t=>`<option ${t===l.nType?'selected':''}>${t}</option>`).join('')}</select></label>
+      <label class="f">Unit<select data-f="nUnit">${cfg().units.map(u=>`<option ${u===l.nUnit?'selected':''}>${esc(u)}</option>`).join('')}</select></label></div>`:''}
+  </div>`).join('');
+}
+function puSum(){
+  const sub=PU.lines.reduce((s,l)=>s+num(l.qty)*num(l.unitCost),0), fees=num($('#puFees')?.value), alloc=$('#puAlloc')?.checked;
+  $('#puSum').innerHTML=`<dl class="kv"><dt>Items</dt><dd>${money(sub)}</dd><dt>Shipping & fees</dt><dd>${money(fees)}</dd><dt>Total purchase cost</dt><dd style="font-size:18px;font-weight:600">${money(sub+fees)}</dd></dl>
+  ${PU.lines.filter(l=>num(l.qty)>0).map(l=>{ const v=num(l.qty)*num(l.unitCost); const land=num(l.unitCost)+(alloc&&sub>0?fees*v/sub/num(l.qty):0); const nm=l.itemId==='__new'?(l.nName||'New item'):get('items',l.itemId)?.name; const s=l.itemId!=='__new'?stOf(l.itemId):{qty:0}; return `<div class="xs muted">${esc(nm)}: stock ${qf(s.qty)} → <b>${qf(s.qty+num(l.qty))}</b> · landed cost ${money(land)} each</div>`; }).join('')}`;
+}
+function puInput(e){
+  const t=e.target, ln=t.closest('.ln');
+  if(ln){ const i=+ln.dataset.i, f=t.dataset.f, l=PU.lines[i];
+    if(f==='total'){ l.unitCost = num(l.qty)>0 ? r4(num(t.value)/num(l.qty)) : l.unitCost; ln.querySelector('[data-f=unitCost]').value=l.unitCost; }
+    else if(f){ l[f]=t.value; }
+    if(f==='qty'||f==='unitCost'){ const tot=ln.querySelector('[data-f=total]'); if(tot) tot.value=num(l.qty)&&num(l.unitCost)?r2(num(l.qty)*num(l.unitCost)):''; }
+    if(f==='itemId' && e.type==='change'){ if(t.value!=='__new' && !num(l.unitCost)) l.unitCost=stOf(t.value).avg||''; puLines(); }
+  }
+  if(t.id==='puSup') $('#puNewSupW').style.display=t.value==='__new'?'':'none';
+  if(t.id==='puPay') $('#puPaidW').style.display=t.value==='Partially Paid'?'':'none';
+  puSum();
+}
+async function savePurchase(){
+  const lines=PU.lines.filter(l=>num(l.qty)>0 && (l.itemId!=='__new'||l.nName.trim()));
+  if(!lines.length){ toast('Add at least one item with a quantity.'); return; }
+  if(lines.some(l=>!(num(l.unitCost)>0)) && !confirm('Some lines have no unit cost. Their COGS will be zero. Save anyway?')) return;
+  let supplierId=$('#puSup').value;
+  if(supplierId==='__new'){ const n=$('#puNewSup').value.trim(); if(!n){ toast('Enter the new supplier’s name.'); return; } const s={id:uid('s_'),name:n,contactPerson:'',contact:'',notes:'',created:Date.now()}; await put('suppliers',s); await audit('create','suppliers',s.id,'Added supplier '+n); supplierId=s.id; }
+  const out=[];
+  for(const l of lines){
+    let id=l.itemId;
+    if(id==='__new'){ const it={id:uid('i_'),name:l.nName.trim(),sku:'',type:l.nType,category:'',unit:l.nUnit,defaultCost:num(l.unitCost),sellPrice:0,supplierId,reorderLevel:0,reorderQty:0,status:'active',notes:'',created:Date.now()}; await put('items',it); await audit('create','items',it.id,'Added item '+it.name+' from a purchase'); id=it.id; }
+    out.push({itemId:id, name:get('items',id).name, qty:num(l.qty), unitCost:num(l.unitCost), lot:(l.lot||'').trim(), exp:l.exp||''});
+  }
+  const fees=num($('#puFees').value), sub=out.reduce((s,l)=>s+l.qty*l.unitCost,0), alloc=$('#puAlloc').checked;
+  const p={id:uid('pu_'), no:nextNo('purchases','PO-',1000), date:$('#puDate').value||today(), supplierId, supplierName:'', lines:out, fees, allocFees:alloc,
+    paymentStatus:$('#puPay').value, paymentMethod:$('#puMethod').value, notes:$('#puNotes').value.trim(), created:Date.now(), by:S.uid||'local'};
+  const tot=puTotal(p); p.paid = p.paymentStatus==='Paid'?tot:p.paymentStatus==='Partially Paid'?Math.min(num($('#puPaid').value),tot):0;
+  const mv=mkMovement('purchase', p.date, out.map(l=>({itemId:l.itemId, qty:l.qty, unitCost:r4(l.unitCost+(alloc&&sub>0?fees*(l.qty*l.unitCost)/sub/l.qty:0)), lot:l.lot, exp:l.exp})), {ref:{col:'purchases',id:p.id}, refNo:p.no, supplierId});
+  await put('movements',mv); p.movementId=mv.id; await put('purchases',p);
+  for(const l of out){ const it=get('items',l.itemId); if(supplierId && !it.supplierId) await put('items',{...it,supplierId}); }
+  await audit('create','purchases',p.id,`Recorded ${p.no}: ${out.map(l=>qf(l.qty)+'× '+l.name).join(', ')} · ${money(tot)}`);
+  closeModal(); render(); toast(p.no+' saved · inventory increased');
+}
+function purchaseView(id){
+  const p=get('purchases',id); if(!p) return;
+  const body=`${p.voided?`<div class="banner bad"><b>Voided</b> ${fdt(p.voidedAt)} — ${esc(p.voidReason||'')}. Its stock was removed again.</div>`:''}
+  ${p.imported?`<div class="banner info">Imported from your spreadsheet. This stock was already included in your opening balance, so it didn’t add inventory again.</div>`:''}
+  <div class="mini" style="margin-bottom:14px"><div><span>Total</span><b>${money(puTotal(p))}</b></div><div><span>Paid</span><b>${money(p.paid)}</b></div><div><span>Supplier</span><b>${esc(supName(p))}</b></div><div><span>Date</span><b>${fd(p.date)}</b></div></div>
+  ${tableHTML([{h:'Item',cls:'wrapc',v:l=>esc(get('items',l.itemId)?.name||l.name)+(l.note?` <span class="chip c-bad">${esc(l.note)}</span>`:'')},{h:'Lot',v:l=>esc(l.lot||'—')},{h:'Expires',v:l=>l.exp?fd(l.exp):'—'},{h:'Qty',num:1,v:l=>qf(l.qty)},{h:'Unit cost',num:1,v:l=>money(l.unitCost)},{h:'Total',num:1,v:l=>money(l.qty*l.unitCost)}], p.lines,
+    {foot:['Items + '+money(p.fees)+' fees','','','','',money(puTotal(p))]})}
+  <dl class="kv" style="margin-top:14px"><dt>Payment</dt><dd>${esc(p.paymentStatus)} · ${esc(p.paymentMethod||'—')}</dd>${p.notes?`<dt>Notes</dt><dd>${esc(p.notes)}</dd>`:''}<dt>Recorded by</dt><dd>${esc(personName(p.by))}</dd></dl>`;
+  const foot=p.voided||!isAdmin()?`<div class="rt"><button class="btn" data-act="close">Close</button></div>`:`<button class="btn danger" data-act="voidPurchase" data-id="${id}">Void purchase</button><div class="rt">${puTotal(p)-num(p.paid)>0.004?`<button class="btn ok" data-act="payPurchase" data-id="${id}">Mark as paid</button>`:''}<button class="btn" data-act="close">Close</button></div>`;
+  openModal(p.no+' · '+supName(p), body, foot, 'wide');
+}
+async function voidPurchase(id){
+  const p=clone(get('purchases',id));
+  const reason=prompt('Why are you voiding '+p.no+'?\n\nIt stays in history but stops counting, and its quantities are removed from stock.'); if(reason===null) return; if(!reason.trim()){ toast('A reason is required.'); return; }
+  if(p.movementId && !p.imported){ const src=get('movements',p.movementId); if(src){ const neg=src.lines.filter(l=>stOf(l.itemId).qty-l.qty<0); if(neg.length && !confirm('Some of this stock was already used. Voiding will make these negative: '+neg.map(l=>get('items',l.itemId)?.name).join(', ')+'. Continue?')) return;
+    await put('movements', mkMovement('void', today(), src.lines.map(l=>({itemId:l.itemId, qty:-l.qty, unitCost:l.unitCost})), {ref:{col:'purchases',id}, refNo:p.no})); } }
+  p.voided=true; p.voidedAt=Date.now(); p.voidReason=reason.trim(); await put('purchases',p); await audit('void','purchases',id,'Voided: '+reason.trim());
+  closeModal(); render(); toast(p.no+' voided');
+}
+
+/* =================== EXPENSES =================== */
+function vExpenses(){
+  const r=rangeOf(U.period), q=qOf('expenses'), f=U.f.expenses||'all';
+  let ex=all('expenses').filter(e=>inR(e.date,r)).sort((a,b)=>b.date.localeCompare(a.date));
+  if(f==='void') ex=ex.filter(e=>e.voided); else { ex=ex.filter(e=>!e.voided); if(f!=='all') ex=ex.filter(e=>e.category===f); }
+  if(q) ex=ex.filter(e=>(e.description+' '+(e.vendor||'')+' '+e.category).toLowerCase().includes(q));
+  const byCat={}; for(const e of all('expenses').filter(e=>!e.voided&&inR(e.date,r))) byCat[e.category]=(byCat[e.category]||0)+num(e.amount);
+  const cats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]); const mx=Math.max(1,...cats.map(c=>c[1]));
+  return ph('Expenses','Operating costs like shipping, fees and ads. Stock you resell belongs in Purchases so it isn’t counted twice.', isAdmin()?`<button class="btn primary" data-act="newExpense">${ic('plus')}Add Expense</button>`:lockNote()) + periodBar() + `
+  <div class="grid2"><div>
+  <div class="tb">${searchBox('expenses','Search expenses')}</div>
+  <div style="margin-bottom:14px">${chipsF('expenses',[['all','All'],...cats.map(c=>[c[0],c[0]]),['void','Voided']],f)}</div>
+  ${tableHTML([{h:'Date',v:e=>fd(e.date)},{h:'Description',cls:'wrapc',v:e=>`<span class="nm">${esc(e.description)}</span>${e.vendor?`<div class="sub">${esc(e.vendor)}</div>`:''}`},{h:'Category',v:e=>`<span class="chip ${e.category==='Inventory purchases'?'c-warn':'c-rest'}">${esc(e.category)}</span>`},{h:'Method',v:e=>esc(e.method||'—')},{h:'Amount',num:1,v:e=>money(e.amount)+(e.receiptId?' 📎':'')}],
+    ex, {click:e=>`data-act="openExpense" data-id="${e.id}"`, rowCls:e=>e.voided?'void':'', foot:ex.length?['','','','Total',money(ex.filter(e=>!e.voided).reduce((s,e)=>s+num(e.amount),0))]:null, empty:'<h3>No expenses in this period</h3><p>Add shipping, courier, ads, payment fees and other running costs.</p>'})}
+  </div><div><div class="card"><div class="card-h"><h3>By category · ${esc(r[2])}</h3></div>
+  ${cats.length?cats.map(([c,v])=>`<div style="margin-bottom:10px"><div class="row between small"><span>${esc(c)}</span><b style="font-weight:600">${money(v)}</b></div><div class="bar"><i style="width:${Math.max(3,v/mx*100)}%"></i></div></div>`).join(''):'<p class="small muted">No expenses yet.</p>'}
+  ${byCat['Inventory purchases']?`<p class="hint">“Inventory purchases” recorded here are left out of operating expenses to avoid double counting. Use Purchases so they also add stock.</p>`:''}</div></div></div>`;
+}
+function expenseModal(id){
+  const e=id?get('expenses',id):{date:today(),description:'',category:'Shipping',amount:'',method:cfg().paymentMethods[0],vendor:'',notes:'',receiptId:''};
+  const ro=!isAdmin()||e.voided;
+  const body=`${e.voided?`<div class="banner bad"><b>Voided</b> — ${esc(e.voidReason||'')}</div>`:''}<fieldset ${ro?'disabled':''}><div class="fg">
+    <label class="f full">Description <em>*</em><input type="text" id="exDesc" value="${esc(e.description)}" placeholder="e.g. J&T shipping to Cebu"></label>
+    <label class="f">Amount <em>*</em><input type="number" step="any" inputmode="decimal" id="exAmt" value="${e.amount}"></label>
+    <label class="f">Date<input type="date" id="exDate" value="${e.date}"></label>
+    <label class="f">Category<select id="exCat">${cfg().expenseCategories.map(c=>`<option ${c===e.category?'selected':''}>${esc(c)}</option>`).join('')}</select></label>
+    <label class="f">Payment method<select id="exMethod">${cfg().paymentMethods.map(m=>`<option ${m===e.method?'selected':''}>${esc(m)}</option>`).join('')}</select></label>
+    <label class="f">Vendor<input type="text" id="exVendor" value="${esc(e.vendor)}"></label>
+    <label class="f full">Notes<input type="text" id="exNotes" value="${esc(e.notes)}"></label></div>
+    <div id="exWarn"></div></fieldset>
+  <fieldset><legend>Receipt</legend>${e.receiptId?`<p class="small"><a href="/_blob/${esc(e.receiptId)}" target="_blank" rel="noopener">View attached receipt</a></p>`:''}
+    ${!ro&&S.assets?`<button type="button" class="btn sm" data-act="upReceipt">${ic('plus')}${e.receiptId?'Replace':'Upload'} receipt</button><span id="rcName" class="small muted" style="margin-left:8px"></span>`:!ro?'<p class="small muted">Receipt upload is available in the published app.</p>':''}</fieldset>`;
+  window._rc=e.receiptId||'';
+  const foot=ro?`<div class="rt"><button class="btn" data-act="close">Close</button></div>`:`${id?`<button class="btn danger" data-act="voidExpense" data-id="${id}">Void</button>`:''}<div class="rt"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="saveExpense" data-id="${id||''}">Save expense</button></div>`;
+  openModal(id?'Expense':'Add expense', body, foot, 'narrow');
+  const w=()=>{ $('#exWarn').innerHTML=$('#exCat').value==='Inventory purchases'?`<div class="warnbox"><b>Tip:</b> use <a href="#" data-act="newPurchase">Add Purchase</a> for stock you resell, so inventory goes up. Expenses in this category are excluded from operating expenses to avoid double counting.</div>`:''; };
+  $('#exCat').addEventListener('change',w); w();
+}
+async function saveExpense(id){
+  const d={description:$('#exDesc').value.trim(), amount:num($('#exAmt').value), date:$('#exDate').value||today(), category:$('#exCat').value, method:$('#exMethod').value, vendor:$('#exVendor').value.trim(), notes:$('#exNotes').value.trim(), receiptId:window._rc||''};
+  if(!d.description||!(d.amount>0)){ toast('Add a description and an amount.'); return; }
+  if(id){ const old=get('expenses',id); await put('expenses',{...old,...d}); await audit('update','expenses',id,`Edited expense ${d.description}`+(old.amount!==d.amount?` (${money(old.amount)} → ${money(d.amount)})`:'')); }
+  else { const e={id:uid('e_'),...d,created:Date.now(),by:S.uid||'local'}; await put('expenses',e); await audit('create','expenses',e.id,`Expense ${d.description} ${money(d.amount)}`); }
+  closeModal(); render(); toast('Expense saved');
+}
+</script>
+<script>
+/* =================== CUSTOMERS =================== */
+function custStats(id){
+  const os=all('orders').filter(o=>o.customerId===id && !o.voided);
+  const ok=os.filter(oCounts); const dates=ok.map(o=>o.date).sort();
+  return {os, count:ok.length, spent:ok.reduce((s,o)=>s+oTotal(o),0), bal:ok.reduce((s,o)=>s+Math.max(0,oBal(o)),0), first:dates[0], last:dates[dates.length-1], profit:ok.reduce((s,o)=>s+oTotal(o)-oCogs(o),0)};
+}
+function vCustomers(){
+  const q=qOf('customers');
+  let cs=all('customers').map(c=>({c,...custStats(c.id)}));
+  if(q) cs=cs.filter(x=>(x.c.name+' '+(x.c.phone||'')+' '+(x.c.email||'')).toLowerCase().includes(q));
+  cs.sort((a,b)=>(b.last||'').localeCompare(a.last||'')||a.c.name.localeCompare(b.c.name));
+  return ph('Customers','Who buys from you, what they bought, and what they owe.', `<button class="btn primary" data-act="newCustomer">${ic('plus')}Add customer</button>`) + `
+  <div class="tb">${searchBox('customers','Search name, number, email')}</div>
+  ${tableHTML([{h:'Customer',v:x=>`<span class="nm">${esc(x.c.name)}</span><div class="sub">${esc(x.c.type||'Direct')}</div>`},{h:'Contact',v:x=>esc(x.c.phone||x.c.email||'—')},{h:'First purchase',v:x=>fd(x.first)},{h:'Last purchase',v:x=>fd(x.last)},{h:'Orders',num:1,v:x=>x.count},{h:'Total spent',num:1,v:x=>money(x.spent)},{h:'Unpaid',num:1,v:x=>x.bal>0.004?`<span class="chip c-info">${money(x.bal)}</span>`:'—'}],
+    cs, {click:x=>`data-act="openCustomer" data-id="${x.c.id}"`, empty:'<h3>No customers yet</h3><p>Customers are added when you make a sale, or add them here.</p>'})}`;
+}
+function customerView(id){
+  const c=get('customers',id); if(!c) return; const s=custStats(id);
+  const body=`<div class="row wr" style="gap:6px;margin-bottom:12px"><span class="chip c-pink">${esc(c.type||'Direct')}</span>${c.phone?`<span class="chip c-rest">${esc(c.phone)}</span>`:''}${c.email?`<span class="chip c-rest">${esc(c.email)}</span>`:''}</div>
+  <div class="mini" style="margin-bottom:14px"><div><span>Total orders</span><b>${s.count}</b></div><div><span>Total spent</span><b>${money(s.spent)}</b></div><div><span>Your gross profit</span><b>${money(s.profit)}</b></div><div><span>Unpaid</span><b>${money(s.bal)}</b></div><div><span>First purchase</span><b>${fd(s.first)}</b></div><div><span>Last purchase</span><b>${fd(s.last)}</b></div></div>
+  ${c.address?`<p class="small" style="margin-bottom:8px"><b style="font-weight:600">Address:</b> ${esc(c.address)}</p>`:''}${c.notes?`<p class="small" style="margin-bottom:12px;white-space:pre-wrap">${esc(c.notes)}</p>`:''}
+  <h3 style="font-size:15px;margin:10px 0 8px">Purchase history</h3>
+  ${tableHTML([{h:'Order',v:o=>esc(o.no)},{h:'Date',v:o=>fd(o.date)},{h:'Items',cls:'wrapc',v:o=>esc(oTitle(o))},{h:'Total',num:1,v:o=>money(oTotal(o))},{h:'Payment',v:o=>payChip(o.paymentStatus)},{h:'Status',v:o=>stChip(o.status)}], s.os.sort((a,b)=>b.date.localeCompare(a.date)), {click:o=>`data-act="openOrder" data-id="${o.id}"`, empty:'<p>No orders yet.</p>'})}`;
+  openModal(c.name, body, `<button class="btn" data-act="editCustomer" data-id="${id}">Edit</button><div class="rt"><button class="btn primary" data-act="saleFor" data-id="${id}">${ic('plus')}New sale</button></div>`, 'wide');
+}
+function customerForm(id){
+  const c=id?get('customers',id):{name:'',type:'Direct',phone:'',email:'',address:'',notes:''};
+  const body=`<div class="fg"><label class="f full">Customer name <em>*</em><input type="text" id="cuName" value="${esc(c.name)}"></label>
+  <label class="f">Contact number<input type="tel" id="cuPhone" value="${esc(c.phone)}"></label><label class="f">Email<input type="email" id="cuEmail" value="${esc(c.email)}"></label>
+  <label class="f">Price type<select id="cuType"><option ${c.type!=='Reseller'?'selected':''}>Direct</option><option ${c.type==='Reseller'?'selected':''}>Reseller</option></select></label>
+  <label class="f full">Address<input type="text" id="cuAddr" value="${esc(c.address)}"></label>
+  <label class="f full">Notes<textarea id="cuNotes" placeholder="Delivery preferences, payment terms, how they found you">${esc(c.notes)}</textarea></label></div>
+  <p class="hint">This is an order and customer list, not a medical record. Keep notes to delivery, payment and buying preferences.</p>`;
+  openModal(id?'Edit customer':'Add customer', body, `<div class="rt"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="saveCustomer" data-id="${id||''}">Save customer</button></div>`, 'narrow');
+}
+async function saveCustomer(id){
+  const name=$('#cuName').value.trim(); if(!name){ toast('Add a name.'); return; }
+  const d={name, phone:$('#cuPhone').value.trim(), email:$('#cuEmail').value.trim(), type:$('#cuType').value, address:$('#cuAddr').value.trim(), notes:$('#cuNotes').value.trim()};
+  if(id){ await put('customers',{...get('customers',id),...d}); await audit('update','customers',id,'Updated customer '+name); closeModal(); render(); customerView(id); }
+  else { const c={id:uid('c_'),...d,created:Date.now()}; await put('customers',c); await audit('create','customers',c.id,'Added customer '+name); closeModal(); render(); toast('Customer added'); }
+}
+
+/* =================== SUPPLIERS =================== */
+function supStats(id){
+  const ps=all('purchases').filter(p=>p.supplierId===id && !p.voided);
+  const items=new Set(); for(const p of ps) for(const l of p.lines) items.add(l.itemId);
+  for(const it of all('items')) if(it.supplierId===id) items.add(it.id);
+  return {ps, items:[...items].map(i=>get('items',i)).filter(Boolean), total:ps.reduce((s,p)=>s+puTotal(p),0), owed:ps.reduce((s,p)=>s+Math.max(0,puTotal(p)-num(p.paid)),0), last:ps.map(p=>p.date).sort().pop()};
+}
+function vSuppliers(){
+  const q=qOf('suppliers');
+  let ss=all('suppliers').map(s=>({s,...supStats(s.id)}));
+  if(q) ss=ss.filter(x=>(x.s.name+' '+(x.s.contactPerson||'')).toLowerCase().includes(q));
+  ss.sort((a,b)=>a.s.name.localeCompare(b.s.name));
+  return ph('Suppliers','Where your stock comes from, and which batch came from whom.', isAdmin()?`<button class="btn primary" data-act="newSupplier">${ic('plus')}Add supplier</button>`:lockNote()) + `
+  <div class="tb">${searchBox('suppliers','Search suppliers')}</div>
+  ${tableHTML([{h:'Supplier',v:x=>`<span class="nm">${esc(x.s.name)}</span>${x.s.contactPerson?`<div class="sub">${esc(x.s.contactPerson)}</div>`:''}`},{h:'Contact',v:x=>esc(x.s.contact||'—')},{h:'Supplies',cls:'wrapc',v:x=>esc(x.items.map(i=>i.name).join(', ')||'—')},{h:'Purchases',num:1,v:x=>x.ps.length},{h:'Total purchased',num:1,v:x=>money(x.total)},{h:'Last purchase',v:x=>fd(x.last)}],
+    ss, {click:x=>`data-act="openSupplier" data-id="${x.s.id}"`, empty:`<h3>No suppliers yet</h3><p>Add them here or while recording a purchase.</p>`})}`;
+}
+function supplierView(id){
+  const s=get('suppliers',id); if(!s) return; const st=supStats(id);
+  const lots=[]; for(const it of all('items')) for(const l of stOf(it.id).lots) if(l.supplierId===id) lots.push({it,l});
+  const body=`<div class="mini" style="margin-bottom:14px"><div><span>Total purchased</span><b>${money(st.total)}</b></div><div><span>Purchases</span><b>${st.ps.length}</b></div><div><span>Owed to them</span><b>${money(st.owed)}</b></div><div><span>Last purchase</span><b>${fd(st.last)}</b></div></div>
+  <dl class="kv"><dt>Contact person</dt><dd>${esc(s.contactPerson||'—')}</dd><dt>Contact info</dt><dd>${esc(s.contact||'—')}</dd><dt>Products supplied</dt><dd>${esc(st.items.map(i=>i.name).join(', ')||'—')}</dd>${s.notes?`<dt>Notes</dt><dd>${esc(s.notes)}</dd>`:''}</dl>
+  ${lots.length?`<h3 style="font-size:15px;margin:16px 0 8px">Batches still on hand</h3>${tableHTML([{h:'Item',v:x=>esc(x.it.name)},{h:'Lot',v:x=>esc(x.l.lot||'—')},{h:'Expires',v:x=>fd(x.l.exp)},{h:'Remaining',num:1,v:x=>qf(x.l.qty)},{h:'Received',v:x=>fd(x.l.date)}],lots)}`:''}
+  <h3 style="font-size:15px;margin:16px 0 8px">Purchase history</h3>
+  ${tableHTML([{h:'PO',v:p=>esc(p.no)},{h:'Date',v:p=>fd(p.date)},{h:'Items',cls:'wrapc',v:p=>esc(p.lines.map(l=>qf(l.qty)+'× '+(get('items',l.itemId)?.name||l.name)).join(', '))},{h:'Total',num:1,v:p=>money(puTotal(p))}], st.ps.sort((a,b)=>b.date.localeCompare(a.date)), {click:p=>`data-act="openPurchase" data-id="${p.id}"`, empty:'<p>No purchases yet.</p>'})}`;
+  openModal(s.name, body, isAdmin()?`<button class="btn" data-act="editSupplier" data-id="${id}">Edit</button><div class="rt"><button class="btn primary" data-act="newPurchase">${ic('truck')}New purchase</button></div>`:'', 'wide');
+}
+function supplierForm(id){
+  const s=id?get('suppliers',id):{name:'',contactPerson:'',contact:'',notes:''};
+  openModal(id?'Edit supplier':'Add supplier', `<div class="fg"><label class="f full">Supplier name <em>*</em><input type="text" id="suName" value="${esc(s.name)}"></label>
+  <label class="f">Contact person<input type="text" id="suPerson" value="${esc(s.contactPerson)}"></label><label class="f">Phone / email / chat<input type="text" id="suContact" value="${esc(s.contact)}"></label>
+  <label class="f full">Notes<textarea id="suNotes" placeholder="Lead times, minimum orders, payment terms">${esc(s.notes)}</textarea></label></div>`,
+  `<div class="rt"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="saveSupplier" data-id="${id||''}">Save supplier</button></div>`, 'narrow');
+}
+async function saveSupplier(id){
+  const name=$('#suName').value.trim(); if(!name){ toast('Add a name.'); return; }
+  const d={name, contactPerson:$('#suPerson').value.trim(), contact:$('#suContact').value.trim(), notes:$('#suNotes').value.trim()};
+  if(id){ await put('suppliers',{...get('suppliers',id),...d}); await audit('update','suppliers',id,'Updated supplier '+name); closeModal(); render(); supplierView(id); }
+  else { const s={id:uid('s_'),...d,created:Date.now()}; await put('suppliers',s); await audit('create','suppliers',s.id,'Added supplier '+name); closeModal(); render(); toast('Supplier added'); }
+}
+
+/* =================== REPORTS =================== */
+const REPORTS=[['pl','Profit & Loss'],['cash','Cash flow'],['sales','Sales'],['prod','Product profitability'],['inv','Inventory'],['exp','Expenses'],['pur','Purchases']];
+function reportData(key){
+  const r=rangeOf(U.period), f=fin(r);
+  if(key==='pl'){
+    const rows=[['Revenue',f.revenue],['Cost of goods sold',-f.cogs],['Gross profit',f.gross],['Gross margin %',f.margin===null?'':r2(f.margin*100)],['Operating expenses',-f.opex],['Inventory losses',-f.losses],['Net profit',f.net]];
+    return {title:'Profit & Loss · '+r[2], head:['Line','Amount'], rows, f, r};
+  }
+  if(key==='cash'){
+    const rows=[['Customer payments (money in)',f.cashIn],['Supplier payments',-f.supplierPaid],['Operating expenses',-f.otherOpex],['Shipping',-f.shipping],['Other payments (inventory via expenses)',-f.invExp],['Net cash flow',f.netCash]];
+    return {title:'Cash flow · '+r[2], head:['Line','Amount'], rows, f, r};
+  }
+  if(key==='sales'){
+    const rows=[]; for(const o of f.os.sort((a,b)=>a.date.localeCompare(b.date))) for(const l of o.items) rows.push([o.date,o.no,custName(o),l.name,l.qty,l.price,r2(l.qty*l.price),r2(l.qty*l.unitCogs)]);
+    return {title:'Sales · '+r[2], head:['Date','Order','Customer','Product','Qty','Price','Revenue','COGS'], rows, numCols:[4,5,6,7], totals:{4:1,6:1,7:1}, f, r};
+  }
+  if(key==='prod'){
+    const m={}; for(const o of f.os) for(const l of o.items){ const k=l.name; m[k]=m[k]||{u:0,rev:0,cogs:0}; m[k].u+=num(l.qty); m[k].rev+=num(l.qty)*num(l.price); m[k].cogs+=num(l.qty)*num(l.unitCogs); }
+    const rows=Object.entries(m).map(([k,v])=>[k,v.u,r2(v.rev),r2(v.cogs),r2(v.rev-v.cogs),v.rev?r2((v.rev-v.cogs)/v.rev*100):'']).sort((a,b)=>b[4]-a[4]);
+    return {title:'Product profitability · '+r[2], head:['Product','Units sold','Revenue','COGS','Gross profit','Margin %'], rows, numCols:[1,2,3,4,5], totals:{1:1,2:1,3:1,4:1}, f, r};
+  }
+  if(key==='inv'){
+    const rows=all('items').filter(i=>i.status!=='inactive').sort((a,b)=>a.name.localeCompare(b.name)).map(i=>{ const s=stOf(i.id); return [i.name,i.type,i.sku||'',s.qty,i.unit||'',s.avg,r2(s.value),itemStatus(i)[0]]; });
+    return {title:'Inventory valuation (now)', head:['Item','Type','SKU','Quantity','Unit','Unit cost','Inventory value','Status'], rows, numCols:[3,5,6], totals:{6:1}, f, r};
+  }
+  if(key==='exp'){
+    const rows=f.ex.filter(e=>!e.voided).sort((a,b)=>a.date.localeCompare(b.date)).map(e=>[e.date,e.category,e.description,e.vendor||'',e.method||'',num(e.amount)]);
+    return {title:'Expenses · '+r[2], head:['Date','Category','Description','Vendor','Method','Amount'], rows, numCols:[5], totals:{5:1}, f, r};
+  }
+  if(key==='pur'){
+    const rows=[]; for(const p of f.pus.sort((a,b)=>a.date.localeCompare(b.date))) for(const l of p.lines) rows.push([p.date,p.no,supName(p),get('items',l.itemId)?.name||l.name,l.lot||'',l.qty,l.unitCost,r2(l.qty*l.unitCost)]);
+    return {title:'Purchases · '+r[2], head:['Date','PO','Supplier','Item','Lot','Qty','Unit cost','Cost'], rows, numCols:[5,6,7], totals:{5:1,7:1}, f, r};
+  }
+}
+function vReports(){
+  const k=U.report, d=reportData(k);
+  let body='';
+  if(k==='pl'){
+    const mo=monthly(6);
+    body=`<div class="grid2"><div class="card"><div class="card-h"><h3>${esc(d.r[2])}</h3></div>${flowHTML(d.f)}</div>
+    <div><div class="card"><div class="card-h"><h3>Monthly · last 6 months</h3></div>${svgBars(mo,['revenue','cogs','opex','net'],['var(--pink)','var(--pink-200)','var(--opt)','var(--nav)'])}
+    <div class="legend"><span><i style="background:var(--pink)"></i>Revenue</span><span><i style="background:var(--pink-200)"></i>COGS</span><span><i style="background:var(--opt)"></i>Expenses</span><span><i style="background:var(--nav)"></i>Net profit</span></div></div>
+    <div style="margin-top:14px">${tableHTML([{h:'Month',v:m=>m.l},{h:'Revenue',num:1,v:m=>money(m.revenue,0)},{h:'COGS',num:1,v:m=>money(m.cogs,0)},{h:'Gross',num:1,v:m=>money(m.gross,0)},{h:'Expenses',num:1,v:m=>money(m.opex+m.losses,0)},{h:'Net',num:1,v:m=>`<span class="${m.net<0?'neg':''}">${money(m.net,0)}</span>`}],mo)}</div></div></div>`;
+  } else if(k==='cash'){
+    const f=d.f;
+    body=`<div class="hlp">Cash flow is money actually received and paid. It’s different from profit: buying stock lowers cash today but only becomes cost when that stock sells.</div>
+    <div class="grid2"><div class="card"><div class="flow">
+      <div class="st"><span>Money in<small>Customer payments received</small></span><b class="pos">${money(f.cashIn)}</b></div>
+      <div class="ar">minus</div>
+      <div class="st sub"><span>Supplier payments</span><b>${money(-f.supplierPaid)}</b></div>
+      <div class="st sub"><span>Operating expenses</span><b>${money(-f.otherOpex)}</b></div>
+      <div class="st sub"><span>Shipping</span><b>${money(-f.shipping)}</b></div>
+      ${f.invExp?`<div class="st sub"><span>Other payments<small>Inventory recorded as expenses</small></span><b>${money(-f.invExp)}</b></div>`:''}
+      <div class="ar">=</div>
+      <div class="st net"><span>Net cash flow</span><b>${money(f.netCash)}</b></div></div></div>
+      <div class="kpis" style="align-content:start"><div class="kpi"><span>Customers still owe you</span><b>${money(receivable())}</b></div><div class="kpi"><span>You still owe suppliers</span><b>${money(payable())}</b></div><div class="kpi"><span>Stock on hand at cost</span><b>${money(all('items').reduce((s,i)=>s+stOf(i.id).value,0))}</b></div></div></div>`;
+  } else {
+    const totals=d.totals?d.head.map((_,i)=>d.totals[i]?d.rows.reduce((s,r)=>s+num(r[i]),0):null):null;
+    if(totals) totals[0]='Total';
+    const fmt=(v,i)=>d.numCols?.includes(i)? (typeof v==='number'? ([1,4,5].includes(i)&&(k==='sales'&&i===4||k==='prod'&&i===1||k==='pur'&&i===5||k==='inv'&&i===3)? qf(v) : (k==='prod'&&i===5)? v+'%' : money(v)) : esc(v)) : (/^\d{4}-\d\d-\d\d$/.test(v)?fd(v):esc(v));
+    body=tableHTML(d.head.map((h,i)=>({h, num:d.numCols?.includes(i), v:r=>fmt(r[i],i)})), d.rows, {foot:totals?totals.map((t,i)=>t===null?'':i===0?t:fmt(r2(t),i)):null, empty:'<h3>No data for this period</h3>'});
+  }
+  return ph('Reports','Pick a report and a period. Export any of them to CSV or Excel.', `<button class="btn" data-act="exportReport" data-fmt="csv">${ic('dl')}CSV</button><button class="btn" data-act="exportReport" data-fmt="xlsx">${ic('dl')}Excel</button>`) + `
+  <div class="chips" style="margin-bottom:12px">${REPORTS.map(([kk,l])=>`<button data-act="report" data-v="${kk}" aria-pressed="${k===kk}">${l}</button>`).join('')}</div>
+  ${k!=='inv'?periodBar():''}${body}`;
+}
+async function exportReport(fmt){
+  const d=reportData(U.report); const name=(d.title.replace(/[^\w]+/g,'-')+'-'+today()).toLowerCase();
+  if(fmt==='csv'){ const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"'; return offerFile(name+'.csv', [d.head,...d.rows].map(r=>r.map(q).join(',')).join('\n')); }
+  try{ await loadXLSX(); const ws=XLSX.utils.aoa_to_sheet([[d.title],[],d.head,...d.rows]); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Report'); const buf=XLSX.write(wb,{type:'array',bookType:'xlsx'}); await offerFile(name+'.xlsx', buf); }
+  catch(e){ toast('Excel export isn’t available here. Use CSV — Excel opens it too.'); }
+}
+function loadXLSX(){ return window.XLSX?Promise.resolve():new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+async function offerFile(filename, data){
+  try{
+    const dl=window.claude?.use ? await window.claude.use('downloads') : null;
+    if(dl){ await dl.save({filename, data}); return; }
+    const blob=new Blob([data]);
+    try{ const file=new File([blob], filename); if(matchMedia('(pointer:coarse)').matches && navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:filename}); return; } }catch(e){ if(e?.name==='AbortError') return; }
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
+  }catch(e){ if(e?.code==='extension_not_enabled') toast('That file type isn’t available here. Use CSV.'); else if(e?.code!=='declined') toast('Couldn’t save the file.'); }
+}
+
+/* =================== SETTINGS =================== */
+function vSettings(){
+  const c=cfg(), tab=U.sub.settings||'business';
+  const tabs=[['business','Business'],['lists','Lists & categories'],['users','Users & roles'],['audit','Audit log'],['data','Data']];
+  let body='';
+  const ro=!isAdmin()?'disabled':'';
+  if(tab==='business') body=`<div class="card"><fieldset ${ro}><div class="fg">
+    <label class="f">Business name<input type="text" id="sbName" value="${esc(c.business.name)}" placeholder="e.g. Peptide Shop PH"></label>
+    <label class="f">Owner name<input type="text" id="sbOwner" value="${esc(c.business.owner)}"></label>
+    <label class="f">Contact number<input type="tel" id="sbPhone" value="${esc(c.business.phone)}"></label>
+    <label class="f">Email<input type="email" id="sbEmail" value="${esc(c.business.email)}"></label>
+    <label class="f full">Address<input type="text" id="sbAddr" value="${esc(c.business.address)}"></label>
+    <label class="f">TIN (optional)<input type="text" id="sbTin" value="${esc(c.business.tin)}"></label>
+    <label class="f">Currency symbol<input type="text" id="sbCur" value="${esc(c.currency)}" maxlength="4"></label>
+    <label class="f">Warn about expiry within (days)<input type="number" id="sbExp" value="${num(c.expiryWarnDays)||90}"></label>
+    <label class="f">Theme<select id="sbTheme"><option value="" ${!c.theme?'selected':''}>Match device</option><option value="light" ${c.theme==='light'?'selected':''}>Light</option><option value="dark" ${c.theme==='dark'?'selected':''}>Dark</option></select></label>
+  </div></fieldset>${isAdmin()?`<div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn primary" data-act="saveBiz">Save</button></div>`:''}</div>`;
+  if(tab==='lists') body=`<div class="card"><p class="small muted" style="margin-bottom:12px">One per line. Item types and order statuses are fixed so reports stay consistent.</p><fieldset ${ro}><div class="fg">
+    <label class="f">Inventory categories<textarea id="slCat" rows="7">${esc(c.itemCategories.join('\n'))}</textarea></label>
+    <label class="f">Expense categories<textarea id="slExp" rows="7">${esc(c.expenseCategories.join('\n'))}</textarea></label>
+    <label class="f">Payment methods<textarea id="slPay" rows="7">${esc(c.paymentMethods.join('\n'))}</textarea></label>
+    <label class="f">Inventory units<textarea id="slUnit" rows="7">${esc(c.units.join('\n'))}</textarea></label></div></fieldset>
+    <p class="hint">Reorder levels are set on each inventory item.</p>${isAdmin()?`<div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn primary" data-act="saveLists">Save</button></div>`:''}</div>`;
+  if(tab==='users'){
+    const me=get('people',S.uid);
+    body=`<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Your name</h3></div><p class="small muted" style="margin-bottom:10px">Shown in the audit log and on records you create.</p>
+      <div class="row wr"><input type="text" id="myName" value="${esc(me?.name||'')}" placeholder="Your name" style="max-width:280px"><button class="btn dark" data-act="saveMyName" ${S.mode==='db'?'':'disabled'}>Save</button></div>${S.mode==='db'?'':'<p class="hint">Available in the published app.</p>'}</div>
+    ${S.mode!=='db'?`<div class="banner info">This copy saves data on this device only, so everyone using it has full access. Staff roles and shared data work in the Claude-hosted version, or after adding cloud sync.</div>`:''}
+    <div class="card" style="margin-bottom:14px"><div class="card-h"><h3>How roles work</h3></div>
+      <p class="small" style="margin-bottom:8px">Invite people with the <b style="font-weight:600">Share</b> button on this app. Their sharing level sets their role here:</p>
+      <dl class="kv" style="margin-bottom:10px"><dt>Owner or Editor</dt><dd>Admin — full access</dd><dt>Contributor</dt><dd>Staff — create orders, view inventory, update order status</dd><dt>Viewer</dt><dd>No access to business data</dd></dl>
+      <p class="small muted">Staff can’t change products or costs, record purchases or expenses, void transactions, or edit settings. The database enforces this, not just the screen.</p></div>
+    <div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Staff permissions</h3></div><fieldset ${ro}>
+      <label class="cb" style="margin-bottom:10px"><input type="checkbox" id="spAdj" ${c.staffCanAdjust?'checked':''}>Staff can make inventory adjustments and stock counts</label>
+      <label class="cb"><input type="checkbox" id="spPay" ${c.staffCanPay?'checked':''}>Staff can record customer payments</label></fieldset>
+      ${isAdmin()?`<div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn primary" data-act="savePerms">Save</button></div>`:''}</div>
+    ${tableHTML([{h:'Person',v:p=>esc(p.name||'(no name yet)')+(p.id===S.uid?' <span class="chip c-pink">You</span>':'')},{h:'Role',v:p=>`<span class="chip ${p.role==='admin'?'c-vio':'c-rest'}">${p.role==='admin'?'Admin':'Staff'}</span>`},{h:'First seen',v:p=>p.firstSeen?fd(isoD(new Date(p.firstSeen))):'—'}], all('people'), {empty:'<p>People appear here after they open the app.</p>'})}`;
+  }
+  if(tab==='audit'){
+    const es=[]; for(const d of all('audit')) for(const e of d.entries||[]) es.push(e); es.sort((a,b)=>b.t-a.t);
+    const q=qOf('audit'); const list=q?es.filter(e=>(e.summary+' '+e.action+' '+personName(e.u)).toLowerCase().includes(q)):es;
+    body=`<div class="tb">${searchBox('audit','Search the audit log')}</div>${tableHTML([{h:'When',v:e=>fdt(e.t)},{h:'Who',v:e=>esc(personName(e.u))+` <span class="sub">${esc(e.role||'')}</span>`},{h:'Action',v:e=>`<span class="chip c-rest">${esc(e.action)}</span>`},{h:'Details',cls:'wrapc',v:e=>esc(e.summary)}], list.slice(0,400),{empty:'<h3>No activity yet</h3>'})}`;
+  }
+  if(tab==='data') body=installCard()+`<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Backup</h3></div><p class="small muted" style="margin-bottom:12px">${S.mode==='db'?'Your data is stored in your Claude account and synced for everyone you share the app with.':'Data is saved in this browser only.'} Download a full backup now and then.</p>
+    <div class="row wr" style="gap:8px"><button class="btn" data-act="backup">${ic('dl')}Download backup (.json)</button>${isAdmin()?`<button class="btn" data-act="restore">Restore from backup</button>`:''}</div>
+    <p class="hint">Moving to another device or the installed app? Download a backup here, then use “Restore from backup” there.</p></div>
+    <div class="card"><div class="card-h"><h3>How your data is organised</h3></div><p class="small" style="margin-bottom:8px">Separate linked records: inventory items, products with their components, inventory transactions, purchases and their lines, orders with their items and payments, expenses, customers, suppliers, and an audit log.</p>
+    <p class="small muted">Stock quantity is never stored. It’s calculated from inventory transactions, so it can’t drift out of sync. Financial records are voided, never deleted.</p>
+    ${c.migratedFrom?`<p class="small muted" style="margin-top:8px">Your spreadsheet data was imported. Past orders and purchases are kept as history; current stock became the opening balance.</p>`:''}</div>`;
+  return ph('Settings', isAdmin()?'Business details, lists, people and records.':'Only admins can change settings.') + `<div class="chips" style="margin-bottom:14px">${tabs.map(([k,l])=>`<button data-act="sub" data-k="settings" data-v="${k}" aria-pressed="${tab===k}">${l}</button>`).join('')}</div>` + body;
+}
+async function saveSettings(patch, msg){ const c={...cfg(),...patch,id:'main'}; await put('settings',c); await audit('settings','settings','main',msg); render(); toast('Settings saved'); }
+const lines = id => $('#'+id).value.split('\n').map(s=>s.trim()).filter(Boolean);
+
+/* =================== install & restore =================== */
+let installEvt=null;
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); installEvt=e; render(); });
+window.addEventListener('appinstalled', ()=>{ installEvt=null; toast('Shopepteez installed'); render(); });
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone===true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+const canInstallHere = () => !!document.querySelector('link[rel=manifest]');
+function installCard(){
+  if(!canInstallHere()) return '';
+  let inner;
+  if(isStandalone()) inner=`<p class="small">${ic('check',2.4)} You’re using the installed app.</p>`;
+  else if(installEvt) inner=`<p class="small muted" style="margin-bottom:10px">Add Shopepteez to your home screen or desktop. It opens in its own window and works offline.</p><button class="btn primary" data-act="install">${ic('dl')}Install app</button>`;
+  else if(isIOS()) inner=`<p class="small">On iPhone or iPad: open this page in <b style="font-weight:600">Safari</b>, tap the <b style="font-weight:600">Share</b> button, then <b style="font-weight:600">Add to Home Screen</b>.</p>`;
+  else inner=`<p class="small">Use your browser’s install option: in Chrome or Edge, click the install icon in the address bar, or open the menu and choose <b style="font-weight:600">Install Shopepteez</b>. On Android, choose <b style="font-weight:600">Add to Home screen</b>.</p>`;
+  return `<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Install the app</h3></div>${inner}</div>`;
+}
+async function doInstall(){ if(!installEvt){ U.sub.settings='data'; go('settings'); return; } installEvt.prompt(); try{ await installEvt.userChoice; }catch(e){} installEvt=null; render(); }
+function restoreBackup(){
+  const fi=$('#fileIn'); fi.accept='application/json,.json';
+  fi.onchange=async()=>{ const f=fi.files[0]; fi.value=''; if(!f) return;
+    let o; try{ o=JSON.parse(await f.text()); }catch(e){ toast('That file isn’t a valid backup.'); return; }
+    if(!o || !['shopdesk','shopepteez'].includes(o.app)){ toast('That file isn’t a Shopepteez backup.'); return; }
+    const n=(o.orders||[]).length, m=(o.items||[]).length;
+    if(!confirm(`Restore this backup from ${o.exported?fd(o.exported.slice(0,10)):'an earlier date'}?\n\n${m} inventory items, ${n} orders.\n\nThis replaces the data in this app.`)) return;
+    toast('Restoring…');
+    if(S.mode!=='db') for(const c of COLS) D[c]=new Map();
+    for(const c of COLS){ if(c==='people') continue; for(const d of (o[c]||[])) if(d && d.id) await put(c,d); if(S.mode!=='db') lsSave(c); }
+    await audit('import','settings','main',`Restored backup (${m} items, ${n} orders)`);
+    S.ver++; render(); toast('Backup restored');
+  };
+  fi.click();
+}
+
+/* =================== modal =================== */
+function openModal(title, body, foot='', size='', sub=''){
+  const m=$('#modal'); m.className='modal'+(size?' '+size:''); m.setAttribute('aria-label',title);
+  m.innerHTML=`<div class="m-head"><div><h2>${esc(title)}</h2>${sub?`<div class="sub">${esc(sub)}</div>`:''}</div><button class="icon-btn" data-act="close" aria-label="Close">${ic('x')}</button></div><div class="m-body" id="mbody">${body}</div>${foot?`<div class="m-foot">${foot}</div>`:''}`;
+  $('#scrim').classList.add('open'); document.body.style.overflow='hidden'; m.scrollTop=0;
+}
+function closeModal(){ $('#scrim').classList.remove('open'); document.body.style.overflow=''; $('#modal').innerHTML=''; }
+$('#scrim').addEventListener('click',e=>{ if(e.target.id==='scrim') closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('#scrim').classList.contains('open')) closeModal(); });
+
+/* =================== actions =================== */
+const go = v => { U.view=v; closeModal(); render(); window.scrollTo(0,0); };
+const A={
+  nav:d=>go(d.v), close:closeModal,
+  more:()=>openModal('All sections', `<div class="sheet-nav">${NAV.map(([k,l,i])=>`<button data-act="nav" data-v="${k}">${ic(i)}${l}</button>`).join('')}</div>`,'','narrow'),
+  filt:d=>{ U.f[d.k]=d.v; render(); }, sub:d=>{ U.sub[d.k]=d.v; render(); }, period:d=>{ U.period=d.v; render(); }, report:d=>{ U.report=d.v; render(); },
+  invFilter:d=>{ if(d.v==='expiring'){ U.sub.inventory='expiring'; } else { U.sub.inventory='items'; U.f.inventory=d.v; } go('inventory'); },
+  ordFilter:d=>{ U.f.orders=d.v; go('orders'); },
+  newSale:()=>newSale(), saleFor:d=>{ closeModal(); newSale(d.id); },
+  wPickCust:d=>{ W.customerId=d.id; W.walkin=!d.id; W.newCust=null; W._same=true; wizRender(); },
+  wNewCust:()=>{ W.newCust=W.newCust||{name:'',phone:'',type:'Direct'}; W.customerId=''; W.walkin=false; W._same=true; wizRender(); setTimeout(()=>$('#wcName')?.focus(),30); },
+  wAdd:d=>{ const p=get('products',d.id); const ex=W.cart.find(l=>l.productId===d.id); if(ex) ex.qty=num(ex.qty)+1; else W.cart.push({productId:d.id,qty:1,price:wizPrice(p)}); W._same=true; wizRender(); },
+  wQty:d=>{ const l=W.cart[+d.i]; l.qty=Math.max(0,num(l.qty)+num(d.d)); if(l.qty===0) W.cart.splice(+d.i,1); W._same=true; wizRender(); },
+  wDel:d=>{ W.cart.splice(+d.i,1); W._same=true; wizRender(); },
+  wSet:d=>{ W[d.k]=d.v; W._same=true; wizRender(); },
+  wNext:wizNext, wBack:()=>{ W.step--; wizRender(); },
+  openOrder:d=>orderView(d.id), saveOrderStatus:d=>saveOrderStatus(d.id), payOrder:d=>payModal(d.id), savePay:d=>savePay(d.id), refundOrder:d=>refundOrder(d.id), voidOrder:d=>voidOrder(d.id),
+  newProduct:()=>{ if(!isAdmin()){ toast('Only admins can add products.'); return; } productModal(); }, openProduct:d=>productModal(d.id), copyProduct:d=>productModal(null,d.id), saveProduct,
+  peAdd:()=>{ const used=new Set(PE.components.map(c=>c.itemId)); const it=all('items').filter(i=>i.status!=='inactive').sort((a,b)=>a.name.localeCompare(b.name)).find(i=>!used.has(i.id)); if(!it){ toast('Add inventory items first.'); return; } PE.components.push({itemId:it.id,qty:1}); peComps(); peSum(); },
+  peDel:d=>{ PE.components.splice(+d.i,1); peComps(); peSum(); },
+  newItem:()=>itemForm(), openItem:d=>itemView(d.id), editItem:d=>itemForm(d.id), saveItem:d=>saveItem(d.id), openMv:d=>mvView(d.id),
+  newAdjust:d=>adjustModal(d.id), saveAdjust, count:countModal, saveCount,
+  newPurchase:d=>purchaseModal(d.id), savePurchase, openPurchase:d=>purchaseView(d.id), voidPurchase:d=>voidPurchase(d.id),
+  puAdd:()=>{ PU.lines.push({itemId:all('items').find(i=>i.status!=='inactive')?.id||'__new',qty:'',unitCost:'',lot:'',exp:'',nName:'',nType:'Peptide',nUnit:'vial'}); puLines(); puSum(); },
+  puDel:d=>{ PU.lines.splice(+d.i,1); puLines(); puSum(); },
+  payPurchase:async d=>{ const p=clone(get('purchases',d.id)); const owed=puTotal(p)-num(p.paid); p.paid=puTotal(p); p.paymentStatus='Paid'; await put('purchases',p); await audit('payment','purchases',p.id,`Paid supplier ${money(owed)}`); purchaseView(d.id); render(); toast('Marked as paid'); },
+  newExpense:()=>{ if(!isAdmin()){ toast('Only admins can add expenses.'); return; } expenseModal(); }, openExpense:d=>expenseModal(d.id), saveExpense:d=>saveExpense(d.id),
+  voidExpense:async d=>{ const e=clone(get('expenses',d.id)); const reason=prompt('Why are you voiding this expense?'); if(reason===null) return; if(!reason.trim()){ toast('A reason is required.'); return; } e.voided=true; e.voidReason=reason.trim(); e.voidedAt=Date.now(); await put('expenses',e); await audit('void','expenses',e.id,`Voided expense ${e.description}: ${reason.trim()}`); closeModal(); render(); toast('Expense voided'); },
+  upReceipt:()=>{ const fi=$('#fileIn'); fi.accept='image/*,application/pdf'; fi.onchange=async()=>{ const f=fi.files[0]; fi.value=''; if(!f) return; try{ $('#rcName').textContent='Uploading…'; const r=await S.assets.upload(f); window._rc=r.id; $('#rcName').textContent=f.name+' attached'; }catch(e){ $('#rcName').textContent=''; toast('Upload failed: '+(e?.message||'try a smaller image or PDF')); } }; fi.click(); },
+  newCustomer:()=>customerForm(), openCustomer:d=>customerView(d.id), editCustomer:d=>customerForm(d.id), saveCustomer:d=>saveCustomer(d.id),
+  newSupplier:()=>supplierForm(), openSupplier:d=>supplierView(d.id), editSupplier:d=>supplierForm(d.id), saveSupplier:d=>saveSupplier(d.id),
+  exportReport:d=>exportReport(d.fmt),
+  saveBiz:()=>saveSettings({business:{name:$('#sbName').value.trim(),owner:$('#sbOwner').value.trim(),phone:$('#sbPhone').value.trim(),email:$('#sbEmail').value.trim(),address:$('#sbAddr').value.trim(),tin:$('#sbTin').value.trim()},currency:$('#sbCur').value.trim()||'₱',expiryWarnDays:num($('#sbExp').value)||90,theme:$('#sbTheme').value},'Updated business settings'),
+  saveLists:()=>saveSettings({itemCategories:lines('slCat'),expenseCategories:lines('slExp'),paymentMethods:lines('slPay'),units:lines('slUnit')},'Updated lists & categories'),
+  savePerms:()=>saveSettings({staffCanAdjust:$('#spAdj').checked,staffCanPay:$('#spPay').checked},'Updated staff permissions'),
+  saveMyName:async()=>{ const p={...(get('people',S.uid)||{id:S.uid,role:S.role,firstSeen:Date.now()}), name:$('#myName').value.trim()}; await put('people',p); render(); toast('Name saved'); },
+  restore:()=>restoreBackup(), install:()=>doInstall(),
+  backup:()=>{ const o={app:'shopepteez',version:2,exported:new Date().toISOString()}; for(const c of COLS) o[c]=all(c); offerFile('shopepteez-backup-'+today()+'.json', JSON.stringify(o,null,2)); },
+};
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(!b||b.disabled) return; const fn=A[b.dataset.act]; if(fn){ e.preventDefault(); fn(b.dataset); } });
+document.addEventListener('input',e=>{ const t=e.target; if(t.dataset.q!==undefined){ U.q[t.dataset.q]=t.value; render(); } });
+document.addEventListener('change',e=>{ const t=e.target;
+  if(t.id==='pFrom'){ U.from=t.value; render(); } if(t.id==='pTo'){ U.to=t.value; render(); }
+  if(t.id==='ledItem'){ U.f.ledgerItem=t.value; render(); } if(t.id==='ledType'){ U.f.ledgerType=t.value; render(); }
+  if(t.dataset.w==='qty' && W){ W._same=true; wizRender(); }
+});
+boot();
+</script>
+<script>
+/* PWA: offline support, persistent storage, home-screen shortcuts */
+if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
+(function(){ const p=new URLSearchParams(location.search); const v=p.get('view'), a=p.get('action');
+  const run=()=>{ if(!S.ready){ return setTimeout(run,150); } if(v && typeof go==='function') go(v); if(a==='newSale') newSale(); };
+  if(v||a) run(); })();
+</script>
+</body>
+</html>
