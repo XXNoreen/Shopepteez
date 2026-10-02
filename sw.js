@@ -1,6 +1,6 @@
 /* Shopepteez service worker: works offline, updates in the background. */
-const VERSION = 'shopepteez-v1';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png'];
+const VERSION = 'shopepteez-v2';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './shopepteez-192.png', './shopepteez-512.png', './shopepteez-maskable.png', './shopepteez-apple.png', './shopepteez-favicon.png', './shopepteez-icon.svg', './favicon.ico'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });

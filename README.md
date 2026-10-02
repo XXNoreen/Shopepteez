@@ -6,7 +6,7 @@ Installable on phones and computers, and works offline.
 ## Put it online (GitHub Pages)
 
 1. In this repository, click **Add file → Upload files**.
-2. Drag in everything from the `shopepteez` folder: `index.html`, `manifest.webmanifest`, `sw.js`, `.nojekyll`, `README.md` and the `icons` folder.
+2. Drag in every file from the `shopepteez` folder. All files sit side by side; there are no subfolders.
 3. Click **Commit changes**.
 4. Go to **Settings → Pages**. Under *Build and deployment*, choose **Deploy from a branch**, branch **main**, folder **/ (root)**, then **Save**.
 5. After a minute or two the app is live at **https://xxnoreen.github.io/Shopepteez/**
@@ -26,4 +26,4 @@ Installable on phones and computers, and works offline.
 ## Updating
 
 Replace `index.html` with a newer version and commit. Installed apps pick up the update the next time they're opened online.
-If you change the icons, also bump `VERSION` in `sw.js`.
+If you change the icons, also bump `VERSION` in `sw.js`, then uninstall and reinstall the app so the new icon shows.

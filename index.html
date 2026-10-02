@@ -6,15 +6,16 @@
 <title>Shopepteez — business manager</title>
 <meta name="theme-color" content="#E5468A">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" href="shopepteez-icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="shopepteez-apple.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Shopepteez">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="application-name" content="Shopepteez">
+<meta name="msapplication-TileColor" content="#E5468A">
 <meta name="description" content="Inventory, kits, orders, expenses and profit for your peptide shop.">
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -673,6 +674,8 @@ function lsV1(){
 </script>
 <script>
 /* =================== shell =================== */
+const LOGO=`<svg viewBox="96 60 360 380" aria-hidden="true" style="width:24px;height:24px"><path d="M200 206 V176 a56 56 0 0 1 112 0 V206" fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round"/><path d="M152 196 H360 Q378 196 380 214 L397 392 Q400 424 368 424 H144 Q112 424 115 392 L132 214 Q134 196 152 196 Z" fill="#fff"/><rect x="226" y="236" width="60" height="24" rx="8" fill="#2A1822"/><rect x="236" y="256" width="40" height="14" fill="#2A1822"/><rect x="222" y="266" width="68" height="128" rx="26" fill="#F0508F"/></svg>`;
+
 const NAV=[['dashboard','Dashboard','dash'],['orders','Orders','bag'],['products','Products & Kits','kit'],['inventory','Inventory','box'],['purchases','Purchases','truck'],['expenses','Expenses','receipt'],['customers','Customers','users'],['suppliers','Suppliers','factory'],['reports','Reports','chart'],['settings','Settings','gear']];
 const DOCK=['dashboard','orders','products','inventory'];
 function render(){
@@ -681,11 +684,11 @@ function render(){
   const bname='Shopepteez', bsub=esc(c.business?.name||'');
   const pend=all('orders').filter(o=>!o.voided && (o.status==='Pending'||o.status==='Processing'||o.status==='Packed')).length;
   const me=get('people',S.uid);
-  $('#side').innerHTML=`<div class="brand"><span class="lg">${ic('vial',2)}</span><div><b>${bname}</b><span>${bsub||(S.mode==='db'?'Synced to your account':'Saved on this device')}</span></div></div>
+  $('#side').innerHTML=`<div class="brand"><span class="lg">${LOGO}</span><div><b>${bname}</b><span>${bsub||(S.mode==='db'?'Synced to your account':'Saved on this device')}</span></div></div>
     ${NAV.map(([k,l,i],n)=>(n===2?'<div class="grp">Stock</div>':n===6?'<div class="grp">People</div>':n===8?'<div class="grp">Insights</div>':'')+`<button class="nv" data-act="nav" data-v="${k}" ${U.view===k?'aria-current="page"':''}>${ic(i)}${l}${k==='orders'&&pend?`<span class="cnt">${pend}</span>`:''}</button>`).join('')}
     ${typeof installEvt!=='undefined'&&installEvt&&!isStandalone()?`<button class="nv" data-act="install" style="margin-top:12px;background:rgba(255,255,255,.08);opacity:1">${ic('dl')}Install app</button>`:''}
     <div class="me"><b>${esc(me?.name||'You')}</b><span>${isAdmin()?'Admin · full access':'Staff · limited access'}</span></div>`;
-  $('#mtop').innerHTML=`<div class="brand"><span class="lg">${ic('vial',2)}</span><div><b>${bname}</b><span>${bsub?bsub+' · ':''}${isAdmin()?'Admin':'Staff'}</span></div></div><button class="round" data-act="newSale" aria-label="New sale">${ic('plus')}</button>`;
+  $('#mtop').innerHTML=`<div class="brand"><span class="lg">${LOGO}</span><div><b>${bname}</b><span>${bsub?bsub+' · ':''}${isAdmin()?'Admin':'Staff'}</span></div></div><button class="round" data-act="newSale" aria-label="New sale">${ic('plus')}</button>`;
   const inMore=!DOCK.includes(U.view);
   $('#dock').innerHTML=DOCK.map(k=>{ const [_,l,i]=NAV.find(n=>n[0]===k); return `<button data-act="nav" data-v="${k}" ${U.view===k?'aria-current="page"':''} aria-label="${l}">${ic(i)}<span>${l.split(' ')[0]}</span></button>`; }).join('')+`<button data-act="more" ${inMore?'aria-current="page"':''} aria-label="More sections">${ic('more')}<span>${inMore?NAV.find(n=>n[0]===U.view)[1].split(' ')[0]:'More'}</span></button>`;
   const V={dashboard:vDash,orders:vOrders,products:vProducts,inventory:vInventory,purchases:vPurchases,expenses:vExpenses,customers:vCustomers,suppliers:vSuppliers,reports:vReports,settings:vSettings}[U.view];

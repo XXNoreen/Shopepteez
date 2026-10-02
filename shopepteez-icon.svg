@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF9CC8"/><stop offset=".5" stop-color="#EC4E92"/><stop offset="1" stop-color="#B8226B"/></linearGradient>
+    <linearGradient id="v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC2DC"/><stop offset="1" stop-color="#FF8DBD"/></linearGradient>
+    <linearGradient id="liq" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F0508F"/><stop offset="1" stop-color="#C9307A"/></linearGradient>
+    <clipPath id="vc"><rect x="222" y="266" width="68" height="128" rx="26"/></clipPath>
+  </defs>
+  <rect width="512" height="512" rx="118" fill="url(#g)"/>
+  <clipPath id="bgc"><rect width="512" height="512" rx="118"/></clipPath>
+  <circle cx="452" cy="40" r="170" fill="#fff" opacity=".13" clip-path="url(#bgc)"/>
+  
+  <g transform="translate(0.0 0.0) scale(1.0)">
+    <!-- bag handle -->
+    <path d="M200 206 V176 a56 56 0 0 1 112 0 V206" fill="none" stroke="#fff" stroke-width="28" stroke-linecap="round"/>
+    <!-- bag body -->
+    <path d="M152 196 H360 Q378 196 380 214 L397 392 Q400 424 368 424 H144 Q112 424 115 392 L132 214 Q134 196 152 196 Z" fill="#fff"/>
+    <!-- vial -->
+    <rect x="226" y="236" width="60" height="24" rx="8" fill="#2A1822"/>
+    <rect x="236" y="256" width="40" height="14" fill="#2A1822"/>
+    <rect x="222" y="266" width="68" height="128" rx="26" fill="url(#v)"/>
+    <rect x="222" y="318" width="68" height="76" rx="0" fill="url(#liq)" clip-path="url(#vc)"/>
+    <path d="M238 292 h14 M238 312 h10" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".9"/>
+    <!-- sparkle -->
+    <path d="M404 96 C407 120 412 125 436 128 C412 131 407 136 404 160 C401 136 396 131 372 128 C396 125 401 120 404 96 Z" fill="#fff"/>
+    <circle cx="112" cy="132" r="9" fill="#fff" opacity=".7"/>
+  </g>
+</svg>
