@@ -1,0 +1,26 @@
+{
+  "name": "Shopepteez",
+  "short_name": "Shopepteez",
+  "description": "Inventory, kits, orders, expenses and profit for your peptide shop.",
+  "id": "/Shopepteez/",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FFF8FB",
+  "theme_color": "#E5468A",
+  "categories": ["business", "productivity", "finance"],
+  "icons": [
+    { "src": "shopepteez-48.png?v=3", "sizes": "48x48", "type": "image/png", "purpose": "any" },
+    { "src": "shopepteez-96.png?v=3", "sizes": "96x96", "type": "image/png", "purpose": "any" },
+    { "src": "shopepteez-144.png?v=3", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "shopepteez-192.png?v=3", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "shopepteez-256.png?v=3", "sizes": "256x256", "type": "image/png", "purpose": "any" },
+    { "src": "shopepteez-512.png?v=3", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "shopepteez-maskable.png?v=3", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "New Sale", "url": "./?action=newSale", "icons": [{ "src": "shopepteez-96.png?v=3", "sizes": "96x96", "type": "image/png" }] },
+    { "name": "Inventory", "url": "./?view=inventory", "icons": [{ "src": "shopepteez-96.png?v=3", "sizes": "96x96", "type": "image/png" }] }
+  ]
+}

@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Shopepteez — business manager</title>
 <meta name="theme-color" content="#E5468A">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="favicon.ico" sizes="any">
-<link rel="icon" href="shopepteez-icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="shopepteez-apple.png">
+<link rel="manifest" href="shopepteez.webmanifest?v=3">
+<link rel="icon" href="favicon.ico?v=3" sizes="any">
+<link rel="icon" href="shopepteez-icon.svg?v=3" type="image/svg+xml">
+<link rel="apple-touch-icon" href="shopepteez-apple.png?v=3">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Shopepteez">
@@ -1805,7 +1805,7 @@ boot();
 </script>
 <script>
 /* PWA: offline support, persistent storage, home-screen shortcuts */
-if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js?v=3',{updateViaCache:'none'}).catch(()=>{})); }
 if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
 (function(){ const p=new URLSearchParams(location.search); const v=p.get('view'), a=p.get('action');
   const run=()=>{ if(!S.ready){ return setTimeout(run,150); } if(v && typeof go==='function') go(v); if(a==='newSale') newSale(); };

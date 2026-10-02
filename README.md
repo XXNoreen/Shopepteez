@@ -26,4 +26,4 @@ Installable on phones and computers, and works offline.
 ## Updating
 
 Replace `index.html` with a newer version and commit. Installed apps pick up the update the next time they're opened online.
-If you change the icons, also bump `VERSION` in `sw.js`, then uninstall and reinstall the app so the new icon shows.
+If you change the icons, also bump `VERSION` in `sw.js` and the `?v=` numbers, then uninstall and reinstall the app so the new icon shows.
