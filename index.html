@@ -487,9 +487,13 @@ function productAvail(p){
   return {n, limit};
 }
 const margin = (price,cost) => price>0 ? (price-cost)/price : null;
-function needsFor(lines){ // lines: [{productId, qty}] → {itemId: qty}
+// A sale line is either a saved product ({productId}) or a custom package/item with its own recipe ({components}).
+const lineComps = ln => Array.isArray(ln.components) ? ln.components : (get('products',ln.productId)?.components || []);
+const compCost = comps => r2((comps||[]).reduce((s,c)=>s+stOf(c.itemId).avg*num(c.qty),0));
+function lineCost(ln){ if(Array.isArray(ln.components)) return r2(compCost(ln.components)+num(ln.extraCost)); const p=get('products',ln.productId); return p?productCost(p):num(ln.unitCogs); }
+function needsFor(lines){ // lines → {itemId: qty}
   const m={};
-  for(const ln of lines){ const p=get('products',ln.productId); if(!p) continue; for(const c of p.components||[]) m[c.itemId]=r4((m[c.itemId]||0)+num(c.qty)*num(ln.qty)); }
+  for(const ln of lines){ for(const c of lineComps(ln)) if(c.itemId) m[c.itemId]=r4((m[c.itemId]||0)+num(c.qty)*num(ln.qty)); }
   return m;
 }
 function shortages(needs){
@@ -890,7 +894,7 @@ function orderView(id){
   const canPay = isAdmin() || cfg().staffCanPay;
   const foot = o.voided ? `<div class="rt"><button class="btn" data-act="close">Close</button></div>` :
    `${isAdmin()?`<button class="btn danger" data-act="voidOrder" data-id="${id}">Void order</button>`:lockNote('Only admins can void')}
-    <div class="rt">${bal>0.004&&canPay?`<button class="btn ok" data-act="payOrder" data-id="${id}">Record payment</button>`:''}${isAdmin()&&oPaid(o)>0&&o.paymentStatus!=='Refunded'?`<button class="btn" data-act="refundOrder" data-id="${id}">Refund</button>`:''}<button class="btn primary" data-act="saveOrderStatus" data-id="${id}">Save status</button></div>`;
+    <div class="rt">${bal>0.004&&canPay?`<button class="btn ok" data-act="payOrder" data-id="${id}">Record payment</button>`:''}${isAdmin()&&oPaid(o)>0&&o.paymentStatus!=='Refunded'?`<button class="btn" data-act="refundOrder" data-id="${id}">Refund</button>`:''}${isAdmin()&&o.paymentStatus!=='Refunded'?`<button class="btn" data-act="editOrder" data-id="${id}">Edit order</button>`:''}<button class="btn primary" data-act="saveOrderStatus" data-id="${id}">Save status</button></div>`;
   openModal(o.no+' · '+custName(o), body, foot, '', oTitle(o));
   const sel=$('#oStatus');
   if(sel) sel.addEventListener('change',()=>{ const s=sel.value; let h='';
@@ -904,7 +908,7 @@ async function deductOrder(o, date){
   const needs=needsFor(o.items);
   const lines=Object.keys(needs).map(itemId=>({itemId, qty:-needs[itemId], unitCost:stOf(itemId).avg}));
   // lock actual COGS per line from current average costs
-  o.items=o.items.map(l=>{ const p=get('products',l.productId); return {...l, unitCogs: p? productCost(p) : num(l.unitCogs)}; });
+  o.items=o.items.map(l=>({...l, unitCogs: lineCost(l)}));
   o.unitCogsFinal=true;
   const mv=mkMovement('sale', date||o.date, lines, {ref:{col:'orders',id:o.id}, refNo:o.no+' ('+oTitle(o)+')'});
   await put('movements', mv); o.deductMv=mv.id; o.reverseMv=null;
@@ -959,15 +963,45 @@ async function voidOrder(id){
 /* =================== NEW SALE WIZARD =================== */
 let W=null;
 const WSTEPS=['Customer','Products','Discount & shipping','Payment','Review & confirm'];
-function newSale(presetCustomer){
-  const prods=all('products').filter(p=>p.status!=='inactive');
-  if(!prods.length){ openModal('New Sale', `<div class="empty"><h3>Add a product first</h3><p>A sale needs a product like “T15 Set” with its inventory recipe.</p>${isAdmin()?`<button class="btn primary" data-act="newProduct">${ic('plus')}Add product</button>`:'<p>Ask an admin to add products.</p>'}</div>`,'','narrow'); return; }
-  W={step:0, customerId:presetCustomer||'', walkin:false, newCust:null, cart:[], discount:0, shipping:0, notes:'', method:'', payStatus:'', paid:0, status:'Completed', date:today(), ack:false, cq:''};
+function newSale(presetCustomer, editId){
+  const o=editId?get('orders',editId):null;
+  if(o){ if(!isAdmin()){ toast('Only admins can edit orders.'); return; } if(o.voided||o.paymentStatus==='Refunded'){ toast('Voided or refunded orders can’t be edited.'); return; } }
+  if(!all('products').some(p=>p.status!=='inactive') && !all('items').length){ openModal('New Sale', `<div class="empty"><h3>Add your inventory first</h3><p>Add the items you stock, then sell them as products, custom packages or single items.</p>${isAdmin()?`<button class="btn primary" data-act="newItem">${ic('plus')}Add inventory item</button>`:'<p>Ask an admin to add inventory.</p>'}</div>`,'','narrow'); return; }
+  W={step:0, customerId:presetCustomer||'', walkin:false, newCust:null, cart:[], discount:0, shipping:0, notes:'', method:'', payStatus:'', paid:0, status:'Completed', date:today(), ack:false, cq:'', cb:null};
+  if(o) Object.assign(W,{ editId:o.id, editNo:o.no,
+    customerId:o.customerId&&get('customers',o.customerId)?o.customerId:'', walkin:!o.customerId, keepName:o.customerId?'':(o.customerName||''),
+    cart:o.items.map(l=>(l.productId && get('products',l.productId) && !Array.isArray(l.components))
+      ? {productId:l.productId, qty:l.qty, price:l.price, keepCogs:l.unitCogs}
+      : {custom:true, name:l.name, price:l.price, qty:l.qty, components:(l.components||[]).map(c=>({...c})), extraCost:num(l.extraCost), keepCogs:l.unitCogs}),
+    discount:num(o.discount), shipping:num(o.shipping), notes:o.notes||'', method:o.paymentMethod||'', payStatus:o.paymentStatus||'Paid', paid:oPaid(o), status:o.status, date:o.date, noStock:!oDeducted(o) });
   wizRender();
+}
+function wizBack(){ if(!W.editId) return {}; const o=get('orders',W.editId); if(!o||!oDeducted(o)) return {}; const m={}; for(const l of get('movements',o.deductMv)?.lines||[]) m[l.itemId]=(m[l.itemId]||0)-num(l.qty); return m; }
+function wizShort(needs){ if(W.noStock) return []; const back=wizBack(), out=[]; for(const id in needs){ const it=get('items',id); if(!it) continue; const have=stOf(id).qty+(back[id]||0); if(needs[id]>have+1e-9) out.push({it,need:needs[id],have}); } return out; }
+function cbSum(){ const b=W.cb, cost=compCost(b.comps), price=num(b.price); return `<dl class="kv"><dt>Cost (COGS)</dt><dd>${money(cost)}</dd><dt>Profit</dt><dd class="${price-cost>=0?'pos':'neg'}">${money(price-cost)}${price>0?' · '+pct(margin(price,cost)):''}</dd></dl>${price>0&&price<cost?'<div class="warnbox bad"><b>Below cost.</b></div>':''}${!b.comps.length?'<div class="warnbox">Add the inventory this uses so it’s deducted from stock.</div>':''}`; }
+function cbHTML(){
+  const b=W.cb;
+  return `<div class="card" style="box-shadow:none;border:2px solid var(--pink-200);margin-bottom:14px">
+    <div class="card-h"><h3>${b.idx!=null?'Edit':'New'} ${b.single?'single item':'custom package'}</h3><span class="chip c-pink">Only for this order</span></div>
+    <div class="fg"><label class="f full">Name shown on the order<input type="text" data-cb="name" value="${esc(b.name)}" placeholder="${b.single?'e.g. Bacwater 3ml':'e.g. T15 + extra syringes'}"></label>
+    <label class="f">Price<input type="number" step="any" inputmode="decimal" data-cb="price" value="${b.price}" placeholder="0"></label></div>
+    <p class="small muted" style="margin:12px 0 8px">${b.single?'Inventory item':'Inventory used for 1 package'}</p>
+    <div class="lines">${b.comps.map((c,i)=>`<div class="ln ln-comp" data-cbi="${i}"><label class="f sel">Item<select data-cbf="itemId">${itemOptions(c.itemId)}</select></label>
+      <label class="f">Qty<input type="number" step="any" inputmode="decimal" data-cbf="qty" value="${c.qty}"></label>
+      <label class="f">Unit cost<input type="text" readonly tabindex="-1" value="${money(stOf(c.itemId).avg)}"></label>
+      <label class="f">In stock<input type="text" readonly tabindex="-1" value="${qf(stOf(c.itemId).qty)}"></label>
+      ${b.single?'<span></span>':`<button type="button" class="icon-btn" data-act="wCbDel" data-i="${i}" aria-label="Remove item">${ic('x')}</button>`}</div>`).join('')}</div>
+    ${b.single?'':`<button type="button" class="btn sm" data-act="wCbAdd">${ic('plus')}Add item</button>`}
+    <div class="preview" id="cbSum" style="margin-top:12px">${cbSum()}</div>
+    ${isAdmin()&&!b.single?`<label class="cb" style="margin-top:10px"><input type="checkbox" data-cb="save" ${b.save?'checked':''}>Also save as a product for future sales</label>`:''}
+    <div class="row" style="justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn" data-act="wCbCancel">Cancel</button><button class="btn primary" data-act="wCbSave">${b.idx!=null?'Update':'Add to order'}</button></div></div>`;
 }
 function wizCust(){ return W.customerId?get('customers',W.customerId):null; }
 function wizPrice(p){ const c=wizCust(); return (c&&c.type==='Reseller'&&num(p.resellerPrice)>0)?num(p.resellerPrice):num(p.price); }
-function wizOrder(){ return {items:W.cart.map(l=>({productId:l.productId,name:get('products',l.productId)?.name||'',qty:num(l.qty),price:num(l.price),unitCogs:productCost(get('products',l.productId)||{})})), discount:num(W.discount), shipping:num(W.shipping), payments:[]}; }
+function wizOrder(){ return {items:W.cart.map(l=>l.custom
+    ? {productId:'', name:l.name, qty:num(l.qty), price:num(l.price), components:(l.components||[]).map(c=>({itemId:c.itemId,qty:num(c.qty)})), extraCost:num(l.extraCost), unitCogs:l.keepCogs!=null?num(l.keepCogs):lineCost(l)}
+    : {productId:l.productId, name:get('products',l.productId)?.name||l.name||'', qty:num(l.qty), price:num(l.price), unitCogs:l.keepCogs!=null?num(l.keepCogs):productCost(get('products',l.productId)||{})}),
+  discount:num(W.discount), shipping:num(W.shipping), payments:[]}; }
 function wizRender(){
   const st=W.step; let body='';
   const head=`<div class="steps">${WSTEPS.map((_,i)=>`<span class="${i<=st?'on':''}"></span>`).join('')}</div><div class="step-t">Step ${st+1} of ${WSTEPS.length} · ${WSTEPS[st]}</div>`;
@@ -987,16 +1021,19 @@ function wizRender(){
   if(st===1){
     const prods=all('products').filter(p=>p.status!=='inactive').sort((a,b)=>a.name.localeCompare(b.name));
     const c=wizCust();
-    body=`<h3 style="font-size:17px;margin-bottom:4px">What are they buying?</h3><p class="small muted" style="margin-bottom:12px">Tap a product to add it.${c&&c.type==='Reseller'?' Reseller prices are applied for '+esc(c.name)+'.':''}</p>
-    <div class="cart" style="margin-bottom:14px">${W.cart.length?W.cart.map((l,i)=>{ const p=get('products',l.productId); const cg=productCost(p); const sh=shortages(needsFor([{productId:l.productId,qty:l.qty}]));
-      return `<div class="ci"><div><b style="font-weight:600">${esc(p.name)}</b><div class="xs muted">COGS ${money(cg)} each</div>
-        <label class="f" style="max-width:150px;margin-top:6px">Price each<input type="number" step="any" inputmode="decimal" data-w="price" data-i="${i}" value="${l.price}"></label>
+    body=`<h3 style="font-size:17px;margin-bottom:4px">What are they buying?</h3><p class="small muted" style="margin-bottom:12px">Tap a product, or make a custom package for this order only.${c&&c.type==='Reseller'?' Reseller prices are applied for '+esc(c.name)+'.':''}</p>
+    <div class="cart" style="margin-bottom:14px">${W.cart.length?W.cart.map((l,i)=>{
+      const isC=!!l.custom, p=isC?null:get('products',l.productId), nm=isC?l.name:(p?.name||l.name||'?'), cg=isC?lineCost(l):productCost(p||{}), comps=lineComps(l);
+      const sh=wizShort(needsFor([l]));
+      return `<div class="ci"><div><b style="font-weight:600">${esc(nm)}</b> ${isC?'<span class="chip c-pink">Custom</span>':''}<div class="xs muted">COGS ${money(cg)} each${isC&&comps.length?' · '+esc(comps.map(x=>qf(x.qty)+'× '+(get('items',x.itemId)?.name||'?')).join(', ')):''}</div>
+        <div class="row wr" style="gap:8px;margin-top:6px;align-items:flex-end"><label class="f" style="max-width:150px">Price each<input type="number" step="any" inputmode="decimal" data-w="price" data-i="${i}" value="${l.price}"></label>${isC?`<button class="btn sm" data-act="wEditLine" data-i="${i}">Edit package</button>`:''}</div>
         ${num(l.price)<cg?`<div class="warnbox bad"><b>Below cost.</b> You’d lose ${money(cg-l.price)} per unit.</div>`:''}
         ${sh.length?`<div class="warnbox bad"><b>Insufficient Inventory:</b> ${sh.map(x=>esc(x.it.name)+' (need '+qf(x.need)+', have '+qf(x.have)+')').join(', ')}</div>`:''}
-        ${!(p.components||[]).length?`<div class="warnbox">This product has no components, so no inventory will be deducted.</div>`:''}</div>
+        ${!comps.length?`<div class="warnbox">No inventory is linked to this, so nothing will be deducted.</div>`:''}</div>
         <div class="qty"><button data-act="wQty" data-i="${i}" data-d="-1" aria-label="Less">−</button><input type="number" inputmode="decimal" data-w="qty" data-i="${i}" value="${l.qty}" aria-label="Quantity"><button data-act="wQty" data-i="${i}" data-d="1" aria-label="More">+</button></div>
         <button class="icon-btn" data-act="wDel" data-i="${i}" aria-label="Remove">${ic('x')}</button></div>`; }).join(''):'<p class="small muted">Nothing added yet.</p>'}</div>
-    <div class="pick" >${prods.map(p=>{ const a=productAvail(p); return `<button data-act="wAdd" data-id="${p.id}"><b>${esc(p.name)}</b><span>${num(wizPrice(p))>0?money(wizPrice(p)):'No price'} · ${a?a.n+' available':'no recipe'}</span></button>`; }).join('')}</div>`;
+    ${W.cb?cbHTML():`<div class="row wr" style="gap:8px;margin-bottom:12px"><button class="btn" data-act="wCustom">${ic('kit')}Custom package</button><button class="btn" data-act="wSingle">${ic('vial')}Single item</button></div>`}
+    ${prods.length?`<div class="pick">${prods.map(p=>{ const a=productAvail(p); return `<button data-act="wAdd" data-id="${p.id}"><b>${esc(p.name)}</b><span>${num(wizPrice(p))>0?money(wizPrice(p)):'No price'} · ${a?a.n+' available':'no recipe'}</span></button>`; }).join('')}</div>`:''}`;
   }
   if(st===2){
     const o=wizOrder();
@@ -1013,13 +1050,13 @@ function wizRender(){
     <label class="f" style="margin-bottom:6px">Payment method</label><div class="seg" style="margin-bottom:16px">${cfg().paymentMethods.map(m=>`<button data-act="wSet" data-k="method" data-v="${esc(m)}" aria-pressed="${W.method===m}">${esc(m)}</button>`).join('')}</div>
     <label class="f" style="margin-bottom:6px">Payment status <em style="color:var(--bad)">*</em></label><div class="seg" style="margin-bottom:12px">${['Paid','Partially Paid','Unpaid'].map(m=>`<button data-act="wSet" data-k="payStatus" data-v="${m}" aria-pressed="${W.payStatus===m}">${m}</button>`).join('')}</div>
     ${W.payStatus==='Partially Paid'?`<label class="f" style="max-width:200px;margin-bottom:12px">Amount received<input type="number" step="any" inputmode="decimal" id="wPaid" value="${W.paid||''}"></label>`:''}
-    <label class="f" style="margin:6px 0">Order status</label>
+    ${W.editId?`<p class="hint" style="margin-top:8px">To change the order status (e.g. Shipped, Cancelled), use the order screen.</p>`:`    <label class="f" style="margin:6px 0">Order status</label>
     <div class="seg">${['Completed','Shipped','Packed','Processing','Pending'].map(m=>`<button data-act="wSet" data-k="status" data-v="${m}" aria-pressed="${W.status===m}">${m}</button>`).join('')}</div>
-    <p class="hint">${W.status==='Pending'?'Pending orders are saved without deducting inventory. Confirm them later from Orders.':'Inventory is deducted as soon as you confirm.'}</p>
+    <p class="hint">${W.status==='Pending'?'Pending orders are saved without deducting inventory. Confirm them later from Orders.':'Inventory is deducted as soon as you confirm.'}</p>`}
     <div class="preview" style="margin-top:14px"><dl class="kv"><dt>Order total</dt><dd style="font-size:18px;font-weight:600">${money(t)}</dd></dl></div>`;
   }
   if(st===4){
-    const o=wizOrder(), t=oTotal(o), cg=oCogs(o), needs=needsFor(o.items), sh=W.status==='Pending'?[]:shortages(needs);
+    const o=wizOrder(), t=oTotal(o), cg=oCogs(o), needs=needsFor(o.items), sh=(W.status==='Pending'&&!W.editId)?[]:wizShort(needs);
     const c=wizCust(); const cname=W.newCust?W.newCust.name:(c?c.name:'Walk-in');
     const below=o.items.filter(l=>l.price<l.unitCogs);
     body=`<h3 style="font-size:17px;margin-bottom:12px">Check and confirm</h3>
@@ -1035,15 +1072,15 @@ function wizRender(){
         <dt>Payment</dt><dd>${esc(W.method||'—')} · ${esc(W.payStatus)}${W.payStatus==='Partially Paid'?' ('+money(W.paid)+')':''}</dd>
         <dt>Status</dt><dd>${esc(W.status)}</dd></dl></div>
       <div class="card" style="box-shadow:none"><dl class="kv"><dt>COGS</dt><dd>${money(cg)}</dd><dt>Gross profit</dt><dd class="${t-cg>=0?'pos':'neg'}">${money(t-cg)}</dd><dt>Margin</dt><dd>${pct(margin(t,cg))}</dd></dl>
-        <h4 style="font-size:14px;margin:14px 0 8px">${W.status==='Pending'?'Inventory (not deducted while pending)':'Inventory to deduct'}</h4>
-        <div class="small">${Object.keys(needs).map(id=>{ const it=get('items',id), have=stOf(id).qty, after=have-needs[id]; return `<div class="row between" style="padding:4px 0;border-top:1px solid var(--line)"><span>${esc(it?.name||'?')}</span><span>−${qf(needs[id])} <span class="muted">→ ${qf(after)}</span>${after<0?' <span class="chip c-bad">short</span>':''}</span></div>`; }).join('')||'<span class="muted">No components.</span>'}</div></div>
+        <h4 style="font-size:14px;margin:14px 0 8px">${W.editId?(W.noStock?'Inventory (not changed for this order)':'Inventory after saving'):W.status==='Pending'?'Inventory (not deducted while pending)':'Inventory to deduct'}</h4>
+        <div class="small">${Object.keys(needs).map(id=>{ const it=get('items',id), have=stOf(id).qty+(wizBack()[id]||0), after=have-needs[id]; return `<div class="row between" style="padding:4px 0;border-top:1px solid var(--line)"><span>${esc(it?.name||'?')}</span><span>−${qf(needs[id])} <span class="muted">→ ${qf(after)}</span>${after<0?' <span class="chip c-bad">short</span>':''}</span></div>`; }).join('')||'<span class="muted">No components.</span>'}</div></div>
     </div>
-    <ul class="check" style="margin-top:14px">${['Total calculated','Inventory deducted'+(W.status==='Pending'?' when confirmed':''),'COGS calculated from current costs','Revenue and profit updated'].map(x=>`<li>${ic('check',2.4)}${x}</li>`).join('')}</ul>`;
+    <ul class="check" style="margin-top:14px">${(W.editId?['Order updated','Inventory adjusted to match','Profit and reports updated','Change saved in the history']:['Total calculated','Inventory deducted'+(W.status==='Pending'?' when confirmed':''),'COGS calculated from current costs','Revenue and profit updated']).map(x=>`<li>${ic('check',2.4)}${x}</li>`).join('')}</ul>`;
   }
-  const nextLbl = st===4 ? 'Confirm order' : 'Next';
+  const nextLbl = st===4 ? (W.editId?'Save changes':'Confirm order') : 'Next';
   const foot=`<button class="btn" data-act="${st===0?'close':'wBack'}">${st===0?'Cancel':'Back'}</button><div class="rt"><button class="btn primary" data-act="wNext">${nextLbl}</button></div>`;
   const keepScroll = $('#modal').scrollTop;
-  openModal('New Sale', head+body, foot);
+  openModal(W.editId?'Edit '+W.editNo:'New Sale', head+body, foot);
   if(W._same) $('#modal').scrollTop=keepScroll; W._same=false;
   const wq=$('#wq'); if(wq){ wq.addEventListener('input',e=>{ W.cq=e.target.value; W._same=true; const p=e.target.selectionStart; wizRender(); const n=$('#wq'); n.focus(); n.setSelectionRange(p,p); }); }
   $('#mbody').addEventListener('input', wizInput);
@@ -1052,6 +1089,11 @@ function wizTotals(){ const o=wizOrder(), t=oTotal(o), cg=oCogs(o); return `<dl 
 function wizInput(e){
   const t=e.target;
   if(t.dataset.w){ const l=W.cart[+t.dataset.i]; l[t.dataset.w]=num(t.value); }
+  if(t.dataset.cb && W.cb){ const k=t.dataset.cb; W.cb[k]= k==='save'?t.checked:t.value; if(k==='name') W.cb.autoName=false; }
+  if(t.dataset.cbf && W.cb){ const i=+t.closest('[data-cbi]').dataset.cbi, c=W.cb.comps[i];
+    if(t.dataset.cbf==='itemId'){ c.itemId=t.value; if(W.cb.single&&W.cb.autoName){ const it=get('items',t.value); W.cb.name=it?.name||''; if(num(it?.sellPrice)>0) W.cb.price=it.sellPrice; } W._same=true; wizRender(); return; }
+    c.qty=num(t.value); }
+  if($('#cbSum') && W.cb) $('#cbSum').innerHTML=cbSum();
   if(t.id==='wDisc') W.discount=num(t.value); if(t.id==='wShip') W.shipping=num(t.value);
   if(t.id==='wNotes') W.notes=t.value; if(t.id==='wDate') W.date=t.value||today();
   if(t.id==='wPaid') W.paid=num(t.value);
@@ -1062,14 +1104,19 @@ function wizInput(e){
 function wizNext(){
   const st=W.step;
   if(st===0){ if(W.newCust && !W.newCust.name.trim()){ toast('Enter the customer’s name.'); return; } if(!W.customerId && !W.walkin && !W.newCust){ toast('Choose a customer, walk-in, or add a new one.'); return; } }
-  if(st===1){ W.cart=W.cart.filter(l=>num(l.qty)>0); if(!W.cart.length){ toast('Add at least one product.'); wizRender(); return; } }
+  if(st===1){ if(W.cb){ toast('Tap “Add to order” or Cancel on the custom package first.'); return; } W.cart=W.cart.filter(l=>num(l.qty)>0); if(!W.cart.length){ toast('Add at least one product.'); wizRender(); return; } }
   if(st===3){ if(!W.payStatus){ toast('Choose a payment status.'); return; } if(!W.method && W.payStatus!=='Unpaid'){ toast('Choose a payment method.'); return; } if(W.payStatus==='Partially Paid' && !(W.paid>0)){ toast('Enter the amount received.'); return; } }
   if(st===4){ return wizConfirm(); }
   W.step++; wizRender();
 }
 async function wizConfirm(){
+  for(const l of W.cart) if(l.custom && l.save && isAdmin()){
+    const p={id:uid('p_'),name:l.name,sku:'',type:'Custom',description:'Created from a sale',price:num(l.price),resellerPrice:0,extraCost:num(l.extraCost),components:(l.components||[]).map(c=>({itemId:c.itemId,qty:num(c.qty)})),status:'active',created:Date.now()};
+    await put('products',p); await audit('create','products',p.id,'Saved custom package as product '+p.name); Object.assign(l,{custom:false,productId:p.id,save:false});
+  }
+  if(W.editId) return saveOrderEdit();
   const o0=wizOrder(); const needs=needsFor(o0.items);
-  if(W.status!=='Pending' && shortages(needs).length && !W.ack){ toast('Tick the box to confirm saving with insufficient inventory.'); return; }
+  if(W.status!=='Pending' && wizShort(needs).length && !W.ack){ toast('Tick the box to confirm saving with insufficient inventory.'); return; }
   let customerId=W.customerId;
   if(W.newCust){ const c={id:uid('c_'),name:W.newCust.name.trim(),phone:W.newCust.phone||'',email:'',address:'',type:W.newCust.type||'Direct',notes:'',created:Date.now()}; await put('customers',c); await audit('create','customers',c.id,'Added customer '+c.name); customerId=c.id; }
   const o={ id:uid('o_'), no:nextNo('orders','SO-',1000), date:W.date, customerId, customerName:'', items:o0.items, discount:o0.discount, shipping:o0.shipping,
@@ -1082,6 +1129,32 @@ async function wizConfirm(){
   await audit('create','orders',o.id,`Created ${o.no}: ${oTitle(o)} · ${money(t)} · ${o.status}`);
   closeModal(); U.view='orders'; render(); toast(o.no+' saved'+(CONFIRMED.has(o.status)?' · inventory deducted':''));
   setTimeout(()=>orderView(o.id),50);
+}
+async function saveOrderEdit(){
+  const old=get('orders',W.editId); if(!old) return;
+  const o0=wizOrder(), needs=needsFor(o0.items);
+  if(oDeducted(old) && wizShort(needs).length && !W.ack){ toast('Tick the box to confirm saving with insufficient inventory.'); return; }
+  let customerId=W.walkin?'':W.customerId;
+  if(W.newCust){ const c={id:uid('c_'),name:W.newCust.name.trim(),phone:W.newCust.phone||'',email:'',address:'',type:W.newCust.type||'Direct',notes:'',created:Date.now()}; await put('customers',c); await audit('create','customers',c.id,'Added customer '+c.name); customerId=c.id; }
+  const o=clone(old);
+  Object.assign(o,{date:W.date, customerId, customerName:customerId?'':(W.keepName||''), items:o0.items, discount:o0.discount, shipping:o0.shipping, paymentMethod:W.method||old.paymentMethod||'', notes:W.notes, editedAt:Date.now()});
+  const t=oTotal(o), pays=old.payments||[];
+  if(pays.length<=1){ const p0=pays[0]; const one=a=>[{id:p0?.id||uid('pay_'), date:(p0&&p0.date!==old.date)?p0.date:o.date, amount:r2(a), method:W.method||p0?.method||'Other'}];
+    o.payments = W.payStatus==='Paid'?one(t) : W.payStatus==='Partially Paid'?one(Math.min(num(W.paid),t)) : [];
+    o.paymentStatus=W.payStatus; }
+  else { if(W.payStatus==='Paid' && oPaid(o)<t-0.004) o.payments=pays.concat({id:uid('pay_'),date:today(),amount:r2(t-oPaid(o)),method:W.method||'Other'}); o.paymentStatus=payStatusFor({...o,paymentStatus:''}); }
+  if(oDeducted(old)){
+    const mv=clone(get('movements',old.deductMv)); const was={}; for(const l of mv.lines) was[l.itemId]=l.unitCost;
+    mv.lines=Object.keys(needs).map(itemId=>({itemId, qty:-needs[itemId], unitCost:was[itemId]!=null?was[itemId]:stOf(itemId).avg}));
+    mv.date=o.date; mv.refNo=o.no+' ('+oTitle(o)+')'; mv.editedAt=Date.now();
+    await put('movements',mv);
+  }
+  const ch=[]; if(old.date!==o.date) ch.push(`date ${fd(old.date)} → ${fd(o.date)}`); if(custName(old)!==custName(o)) ch.push(`customer ${custName(old)} → ${custName(o)}`);
+  if(oTitle(old)!==oTitle(o)) ch.push(`items ${oTitle(old)} → ${oTitle(o)}`); if(Math.abs(oTotal(old)-t)>0.004) ch.push(`total ${money(oTotal(old))} → ${money(t)}`);
+  if(old.paymentStatus!==o.paymentStatus) ch.push(`payment ${old.paymentStatus} → ${o.paymentStatus}`); if((old.notes||'')!==(o.notes||'')) ch.push('notes changed');
+  await put('orders',o);
+  await audit('edit','orders',o.id,`Edited ${o.no}: ${ch.join('; ')||'no changes'}`);
+  closeModal(); render(); toast(o.no+' updated'); setTimeout(()=>orderView(o.id),50);
 }
 </script>
 <script>
@@ -1353,10 +1426,14 @@ function vPurchases(){
     empty:`<h3>No purchases</h3><p>Example: 10 × Tirz 15mg at ₱359 each. Inventory goes up by 10 and the cost is recorded.</p>${isAdmin()?`<button class="btn primary" data-act="newPurchase">${ic('plus')}Add Purchase</button>`:''}`})}`;
 }
 let PU=null;
-function purchaseModal(itemId){
+function purchaseModal(itemId, editId){
   if(!isAdmin()){ toast('Only admins can record purchases.'); return; }
+  const ed=editId?get('purchases',editId):null;
+  if(ed && ed.voided){ toast('Voided purchases can’t be edited.'); return; }
   const first=itemId||all('items').filter(i=>i.status!=='inactive').sort((a,b)=>a.name.localeCompare(b.name))[0]?.id||'__new';
-  PU={lines:[{itemId:first,qty:'',unitCost:itemId?stOf(itemId).avg||'':'',lot:'',exp:'',nName:'',nType:'Peptide',nUnit:'vial'}], supplierId:get('items',itemId)?.supplierId||'', newSup:''};
+  PU = ed ? { editId:ed.id, imported:!!ed.imported, supplierId:ed.supplierId||'', newSup:'',
+      lines:ed.lines.map(l=>{ const linked=l.itemId && get('items',l.itemId); return {itemId:linked?l.itemId:'__new', qty:l.qty, unitCost:l.unitCost, lot:l.lot||'', exp:l.exp||'', nName:linked?'':(l.name||''), nType:'Peptide', nUnit:'vial', note:l.note||''}; }) }
+    : {lines:[{itemId:first,qty:'',unitCost:itemId?stOf(itemId).avg||'':'',lot:'',exp:'',nName:'',nType:'Peptide',nUnit:'vial'}], supplierId:get('items',itemId)?.supplierId||'', newSup:''};
   const sups=all('suppliers').sort((a,b)=>a.name.localeCompare(b.name));
   const body=`<fieldset><div class="fg"><label class="f">Purchase date<input type="date" id="puDate" value="${today()}"></label>
     <label class="f">Supplier<select id="puSup"><option value="">—</option><option value="__new">＋ New supplier…</option>${sups.map(s=>`<option value="${s.id}" ${s.id===PU.supplierId?'selected':''}>${esc(s.name)}</option>`).join('')}</select></label>
@@ -1369,7 +1446,10 @@ function purchaseModal(itemId){
     <label class="f full">Notes<input type="text" id="puNotes" placeholder="Order no., delivery issues"></label></div>
     <label class="cb" style="margin-top:10px"><input type="checkbox" id="puAlloc" checked>Spread shipping & fees into each item’s cost (recommended)</label></fieldset>
   <div class="preview" id="puSum"></div>`;
-  openModal('Add purchase', body, `<div class="rt"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="savePurchase">Save purchase</button></div>`, 'wide');
+  openModal(ed?'Edit '+ed.no:'Add purchase', (ed?(ed.imported?`<div class="banner info">This purchase was imported as history, so editing it won’t change stock.</div>`:`<div class="hlp">Change anything, including the date. Stock and average costs update automatically, and the change is saved in the history.</div>`):'')+body,
+    `<div class="rt"><button class="btn" data-act="${ed?'openPurchase':'close'}" ${ed?`data-id="${ed.id}"`:''}>Cancel</button><button class="btn primary" data-act="savePurchase">${ed?'Save changes':'Save purchase'}</button></div>`, 'wide');
+  if(ed){ $('#puDate').value=ed.date; $('#puFees').value=num(ed.fees)||''; $('#puPay').value=ed.paymentStatus||'Paid'; $('#puPaidW').style.display=ed.paymentStatus==='Partially Paid'?'':'none'; $('#puPaid').value=num(ed.paid)||'';
+    if(ed.paymentMethod && cfg().paymentMethods.includes(ed.paymentMethod)) $('#puMethod').value=ed.paymentMethod; $('#puNotes').value=ed.notes||''; $('#puAlloc').checked=ed.allocFees!==false; }
   puLines(); puSum();
   const mb=$('#mbody'); mb.addEventListener('input',puInput); mb.addEventListener('change',puInput);
 }
@@ -1390,7 +1470,7 @@ function puLines(){
 function puSum(){
   const sub=PU.lines.reduce((s,l)=>s+num(l.qty)*num(l.unitCost),0), fees=num($('#puFees')?.value), alloc=$('#puAlloc')?.checked;
   $('#puSum').innerHTML=`<dl class="kv"><dt>Items</dt><dd>${money(sub)}</dd><dt>Shipping & fees</dt><dd>${money(fees)}</dd><dt>Total purchase cost</dt><dd style="font-size:18px;font-weight:600">${money(sub+fees)}</dd></dl>
-  ${PU.lines.filter(l=>num(l.qty)>0).map(l=>{ const v=num(l.qty)*num(l.unitCost); const land=num(l.unitCost)+(alloc&&sub>0?fees*v/sub/num(l.qty):0); const nm=l.itemId==='__new'?(l.nName||'New item'):get('items',l.itemId)?.name; const s=l.itemId!=='__new'?stOf(l.itemId):{qty:0}; return `<div class="xs muted">${esc(nm)}: stock ${qf(s.qty)} → <b>${qf(s.qty+num(l.qty))}</b> · landed cost ${money(land)} each</div>`; }).join('')}`;
+  ${PU.lines.filter(l=>num(l.qty)>0).map(l=>{ const v=num(l.qty)*num(l.unitCost); const land=num(l.unitCost)+(alloc&&sub>0?fees*v/sub/num(l.qty):0); const nm=l.itemId==='__new'?(l.nName||'New item'):get('items',l.itemId)?.name; const s=l.itemId!=='__new'?stOf(l.itemId):{qty:0}; const ed=PU.editId&&get('purchases',PU.editId); const was=(ed&&!ed.imported&&ed.movementId)?(get('movements',ed.movementId)?.lines||[]).filter(x=>x.itemId===l.itemId).reduce((t,x)=>t+num(x.qty),0):0; const stockAdd=!(ed&&ed.imported); return `<div class="xs muted">${esc(nm)}: ${stockAdd?`stock ${qf(s.qty)} → <b>${qf(s.qty-was+num(l.qty))}</b>`:'history only, stock unchanged'} · landed cost ${money(land)} each</div>`; }).join('')}`;
 }
 function puInput(e){
   const t=e.target, ln=t.closest('.ln');
@@ -1407,20 +1487,41 @@ function puInput(e){
 async function savePurchase(){
   const lines=PU.lines.filter(l=>num(l.qty)>0 && (l.itemId!=='__new'||l.nName.trim()));
   if(!lines.length){ toast('Add at least one item with a quantity.'); return; }
+  const ed=PU.editId?get('purchases',PU.editId):null;
+  if(ed && ed.movementId && !ed.imported){ // would this edit make any stock negative?
+    const was={}, now={}; for(const l of get('movements',ed.movementId)?.lines||[]) was[l.itemId]=(was[l.itemId]||0)+num(l.qty);
+    for(const l of lines) if(l.itemId!=='__new') now[l.itemId]=(now[l.itemId]||0)+num(l.qty);
+    const neg=[...new Set([...Object.keys(was),...Object.keys(now)])].filter(id=>stOf(id).qty-(was[id]||0)+(now[id]||0)<-1e-9);
+    if(neg.length && !confirm('Some of this stock was already sold. This change will make these negative: '+neg.map(id=>get('items',id)?.name).join(', ')+'. Save anyway?')) return;
+  }
   if(lines.some(l=>!(num(l.unitCost)>0)) && !confirm('Some lines have no unit cost. Their COGS will be zero. Save anyway?')) return;
   let supplierId=$('#puSup').value;
   if(supplierId==='__new'){ const n=$('#puNewSup').value.trim(); if(!n){ toast('Enter the new supplier’s name.'); return; } const s={id:uid('s_'),name:n,contactPerson:'',contact:'',notes:'',created:Date.now()}; await put('suppliers',s); await audit('create','suppliers',s.id,'Added supplier '+n); supplierId=s.id; }
   const out=[];
   for(const l of lines){
     let id=l.itemId;
+    if(id==='__new' && ed && ed.imported){ out.push({itemId:'', name:l.nName.trim(), qty:num(l.qty), unitCost:num(l.unitCost), lot:(l.lot||'').trim(), exp:l.exp||'', note:l.note||''}); continue; }
     if(id==='__new'){ const it={id:uid('i_'),name:l.nName.trim(),sku:'',type:l.nType,category:'',unit:l.nUnit,defaultCost:num(l.unitCost),sellPrice:0,supplierId,reorderLevel:0,reorderQty:0,status:'active',notes:'',created:Date.now()}; await put('items',it); await audit('create','items',it.id,'Added item '+it.name+' from a purchase'); id=it.id; }
-    out.push({itemId:id, name:get('items',id).name, qty:num(l.qty), unitCost:num(l.unitCost), lot:(l.lot||'').trim(), exp:l.exp||''});
+    out.push({itemId:id, name:get('items',id).name, qty:num(l.qty), unitCost:num(l.unitCost), lot:(l.lot||'').trim(), exp:l.exp||'', ...(l.note?{note:l.note}:{})});
   }
   const fees=num($('#puFees').value), sub=out.reduce((s,l)=>s+l.qty*l.unitCost,0), alloc=$('#puAlloc').checked;
+  const landed=l=>({itemId:l.itemId, qty:l.qty, unitCost:r4(l.unitCost+(alloc&&sub>0?fees*(l.qty*l.unitCost)/sub/l.qty:0)), lot:l.lot, exp:l.exp});
+  if(ed){
+    const p={...clone(ed), date:$('#puDate').value||ed.date, supplierId, supplierName:supplierId?'':(ed.supplierName||''), lines:out, fees, allocFees:alloc,
+      paymentStatus:$('#puPay').value, paymentMethod:$('#puMethod').value, notes:$('#puNotes').value.trim(), editedAt:Date.now()};
+    const tot=puTotal(p); p.paid = p.paymentStatus==='Paid'?tot:p.paymentStatus==='Partially Paid'?Math.min(num($('#puPaid').value),tot):0;
+    if(ed.movementId && !ed.imported){ const mv=clone(get('movements',ed.movementId)); Object.assign(mv,{date:p.date, supplierId, refNo:p.no, lines:out.filter(l=>l.itemId).map(landed), editedAt:Date.now()}); await put('movements',mv); }
+    await put('purchases',p);
+    const ch=[]; if(ed.date!==p.date) ch.push(`date ${fd(ed.date)} → ${fd(p.date)}`); if(supName(ed)!==supName(p)) ch.push(`supplier ${supName(ed)} → ${supName(p)}`);
+    const li=x=>x.lines.map(l=>qf(l.qty)+'× '+(get('items',l.itemId)?.name||l.name)+' @'+money(l.unitCost)).join(', ');
+    if(li(ed)!==li(p)) ch.push(`items ${li(ed)} → ${li(p)}`); if(Math.abs(puTotal(ed)-tot)>0.004) ch.push(`total ${money(puTotal(ed))} → ${money(tot)}`); if(ed.paymentStatus!==p.paymentStatus) ch.push(`payment ${ed.paymentStatus} → ${p.paymentStatus}`);
+    await audit('edit','purchases',p.id,`Edited ${p.no}: ${ch.join('; ')||'no changes'}`);
+    render(); purchaseView(p.id); toast(p.no+' updated'+(ed.imported?'':' · stock recalculated')); return;
+  }
   const p={id:uid('pu_'), no:nextNo('purchases','PO-',1000), date:$('#puDate').value||today(), supplierId, supplierName:'', lines:out, fees, allocFees:alloc,
     paymentStatus:$('#puPay').value, paymentMethod:$('#puMethod').value, notes:$('#puNotes').value.trim(), created:Date.now(), by:S.uid||'local'};
   const tot=puTotal(p); p.paid = p.paymentStatus==='Paid'?tot:p.paymentStatus==='Partially Paid'?Math.min(num($('#puPaid').value),tot):0;
-  const mv=mkMovement('purchase', p.date, out.map(l=>({itemId:l.itemId, qty:l.qty, unitCost:r4(l.unitCost+(alloc&&sub>0?fees*(l.qty*l.unitCost)/sub/l.qty:0)), lot:l.lot, exp:l.exp})), {ref:{col:'purchases',id:p.id}, refNo:p.no, supplierId});
+  const mv=mkMovement('purchase', p.date, out.map(landed), {ref:{col:'purchases',id:p.id}, refNo:p.no, supplierId});
   await put('movements',mv); p.movementId=mv.id; await put('purchases',p);
   for(const l of out){ const it=get('items',l.itemId); if(supplierId && !it.supplierId) await put('items',{...it,supplierId}); }
   await audit('create','purchases',p.id,`Recorded ${p.no}: ${out.map(l=>qf(l.qty)+'× '+l.name).join(', ')} · ${money(tot)}`);
@@ -1434,8 +1535,9 @@ function purchaseView(id){
   ${tableHTML([{h:'Item',cls:'wrapc',v:l=>esc(get('items',l.itemId)?.name||l.name)+(l.note?` <span class="chip c-bad">${esc(l.note)}</span>`:'')},{h:'Lot',v:l=>esc(l.lot||'—')},{h:'Expires',v:l=>l.exp?fd(l.exp):'—'},{h:'Qty',num:1,v:l=>qf(l.qty)},{h:'Unit cost',num:1,v:l=>money(l.unitCost)},{h:'Total',num:1,v:l=>money(l.qty*l.unitCost)}], p.lines,
     {foot:['Items + '+money(p.fees)+' fees','','','','',money(puTotal(p))]})}
   <dl class="kv" style="margin-top:14px"><dt>Payment</dt><dd>${esc(p.paymentStatus)} · ${esc(p.paymentMethod||'—')}</dd>${p.notes?`<dt>Notes</dt><dd>${esc(p.notes)}</dd>`:''}<dt>Recorded by</dt><dd>${esc(personName(p.by))}</dd></dl>`;
-  const foot=p.voided||!isAdmin()?`<div class="rt"><button class="btn" data-act="close">Close</button></div>`:`<button class="btn danger" data-act="voidPurchase" data-id="${id}">Void purchase</button><div class="rt">${puTotal(p)-num(p.paid)>0.004?`<button class="btn ok" data-act="payPurchase" data-id="${id}">Mark as paid</button>`:''}<button class="btn" data-act="close">Close</button></div>`;
-  openModal(p.no+' · '+supName(p), body, foot, 'wide');
+  const hist=auditFor(id);
+  const foot=p.voided||!isAdmin()?`<div class="rt"><button class="btn" data-act="close">Close</button></div>`:`<button class="btn danger" data-act="voidPurchase" data-id="${id}">Void purchase</button><div class="rt"><button class="btn" data-act="editPurchase" data-id="${id}">Edit</button>${puTotal(p)-num(p.paid)>0.004?`<button class="btn ok" data-act="payPurchase" data-id="${id}">Mark as paid</button>`:''}<button class="btn" data-act="close">Close</button></div>`;
+  openModal(p.no+' · '+supName(p), body+(hist.length?`<h3 style="font-size:15px;margin:18px 0 8px">History</h3><div class="small">${hist.map(h=>`<div class="row between" style="padding:6px 0;border-top:1px solid var(--line);gap:12px"><span>${esc(h.summary)}</span><span class="muted xs" style="white-space:nowrap">${fdt(h.t)}</span></div>`).join('')}</div>`:''), foot, 'wide');
 }
 async function voidPurchase(id){
   const p=clone(get('purchases',id));
@@ -1480,7 +1582,7 @@ function expenseModal(id){
     ${!ro&&S.assets?`<button type="button" class="btn sm" data-act="upReceipt">${ic('plus')}${e.receiptId?'Replace':'Upload'} receipt</button><span id="rcName" class="small muted" style="margin-left:8px"></span>`:!ro?'<p class="small muted">Receipt upload is available in the published app.</p>':''}</fieldset>`;
   window._rc=e.receiptId||'';
   const foot=ro?`<div class="rt"><button class="btn" data-act="close">Close</button></div>`:`${id?`<button class="btn danger" data-act="voidExpense" data-id="${id}">Void</button>`:''}<div class="rt"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="saveExpense" data-id="${id||''}">Save expense</button></div>`;
-  openModal(id?'Expense':'Add expense', body, foot, 'narrow');
+  openModal(id?(ro?'Expense':'Edit expense'):'Add expense', body, foot, 'narrow');
   const w=()=>{ $('#exWarn').innerHTML=$('#exCat').value==='Inventory purchases'?`<div class="warnbox"><b>Tip:</b> use <a href="#" data-act="newPurchase">Add Purchase</a> for stock you resell, so inventory goes up. Expenses in this category are excluded from operating expenses to avoid double counting.</div>`:''; };
   $('#exCat').addEventListener('change',w); w();
 }
@@ -2160,6 +2262,24 @@ async function impTemplate(){
   await offerFile('shopepteez-import-template.xlsx', XLSX.write(wb,{type:'array',bookType:'xlsx'}));
 }
 Object.assign(A,{ importData:importModal, impTemplate, impDo, impReset:()=>{ IM.sheets=[]; impRender(); } });
+/* edit + custom package actions */
+Object.assign(A,{
+  editOrder:d=>{ closeModal(); newSale(null,d.id); },
+  editPurchase:d=>purchaseModal(null,d.id),
+  wPickCust:d=>{ W.customerId=d.id; W.walkin=!d.id; W.newCust=null; if(d.id) W.keepName=''; W._same=true; wizRender(); },
+  wCustom:()=>{ const it=all('items').filter(i=>i.status!=='inactive').sort((a,b)=>a.name.localeCompare(b.name))[0]; W.cb={name:'',price:'',comps:it?[{itemId:it.id,qty:1}]:[],save:false,idx:null}; W._same=true; wizRender(); },
+  wSingle:()=>{ const it=all('items').filter(i=>i.status!=='inactive').sort((a,b)=>a.name.localeCompare(b.name))[0]; if(!it){ toast('Add inventory items first.'); return; } W.cb={single:true,autoName:true,name:it.name,price:num(it.sellPrice)||'',comps:[{itemId:it.id,qty:1}],idx:null}; W._same=true; wizRender(); },
+  wCbAdd:()=>{ const used=new Set(W.cb.comps.map(c=>c.itemId)); const it=all('items').filter(i=>i.status!=='inactive').sort((a,b)=>a.name.localeCompare(b.name)).find(i=>!used.has(i.id)); if(!it){ toast('No more items to add.'); return; } W.cb.comps.push({itemId:it.id,qty:1}); W._same=true; wizRender(); },
+  wCbDel:d=>{ W.cb.comps.splice(+d.i,1); W._same=true; wizRender(); },
+  wCbCancel:()=>{ W.cb=null; W._same=true; wizRender(); },
+  wCbSave:()=>{ const b=W.cb; const name=String(b.name||'').trim(); if(!name){ toast('Give it a name, e.g. “T15 + extra syringes”.'); return; }
+    const comps=b.comps.filter(c=>get('items',c.itemId)&&num(c.qty)>0).map(c=>({itemId:c.itemId,qty:num(c.qty)}));
+    if(!comps.length && !confirm('This has no inventory linked, so nothing will be deducted from stock. Add it anyway?')) return;
+    const line={custom:true, name, price:num(b.price), components:comps, extraCost:0, save:!!b.save};
+    if(b.idx!=null){ const old=W.cart[b.idx]; W.cart[b.idx]={...line, qty:old.qty}; } else W.cart.push({...line, qty:1});
+    W.cb=null; W._same=true; wizRender(); },
+  wEditLine:d=>{ const l=W.cart[+d.i]; W.cb={single:false,name:l.name,price:l.price,comps:(l.components||[]).map(c=>({...c})),save:!!l.save,idx:+d.i}; W._same=true; wizRender(); },
+});
 boot();
 </script>
 <script>
