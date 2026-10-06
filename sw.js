@@ -1,7 +1,7 @@
-/* Shopepteez service worker v3
+/* Shopepteez service worker v5
    - The app page always tries the network first (so updates show), with an offline copy as backup.
    - Install files and icons are NEVER served from cache, so the installed app always gets the real icon. */
-const VERSION = 'shopepteez-v3';
+const VERSION = 'shopepteez-v5';
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION)
     .then(c => c.add(new Request('./index.html', { cache: 'reload' })))
@@ -20,7 +20,7 @@ self.addEventListener('fetch', e => {
   if (url.origin === location.origin && /\.(webmanifest|png|ico|svg|js)$/.test(url.pathname)) return;
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req, { cache: 'no-cache' })
+      fetch(new Request(req.url, { cache: 'no-cache', credentials: 'same-origin' }))
         .then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put('./index.html', copy)); return res; })
         .catch(() => caches.match('./index.html'))
     );

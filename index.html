@@ -119,13 +119,13 @@ main{max-width:1240px;margin:0 auto;padding:22px 28px 60px}
 .round{width:42px;height:42px;border-radius:50%;border:0;background:var(--surface);display:grid;place-items:center;padding:0;box-shadow:0 4px 14px rgba(201,48,122,.08);flex:none}
 .round svg{width:19px;height:19px}
 /* quick actions */
-.qa{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px}
+.qa{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px}
 .qa button{border:0;border-radius:18px;background:var(--surface);padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:500;font-size:13px;color:var(--ink);box-shadow:var(--shadow);text-align:center;line-height:1.25}
 .qa button .qi{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--pink-100);color:var(--pink-600)}
 .qa button .qi svg{width:19px;height:19px}
 .qa button.main .qi{background:var(--grad);color:#fff}
 @media (max-width:1100px){ .qa{grid-template-columns:repeat(4,minmax(0,1fr))} }
-@media (max-width:520px){ .qa{grid-template-columns:repeat(3,minmax(0,1fr))} .qa button:last-child{display:none} }
+@media (max-width:520px){ .qa{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px} .qa button{padding:11px 4px;font-size:11.5px;border-radius:16px} .qa button .qi{width:34px;height:34px} }
 /* cards */
 .card{background:var(--surface);border-radius:22px;padding:18px 20px;box-shadow:var(--shadow)}
 .card-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
@@ -746,6 +746,7 @@ function vDash(){
     <button data-act="newAdjust" ${canAdjust()?'':'disabled'}><span class="qi">${ic('sliders')}</span>Inventory Adjustment</button>
     <button data-act="nav" data-v="orders"><span class="qi">${ic('bag')}</span>View Orders</button>
     <button data-act="nav" data-v="reports"><span class="qi">${ic('chart')}</span>View Reports</button>
+    <button data-act="importData" ${isAdmin()?'':'disabled'}><span class="qi">${ic('dl')}</span>Import Excel / CSV</button>
   </div>
   <div class="sec"><h2>Sales</h2></div>
   <div class="kpis">
@@ -1179,7 +1180,7 @@ async function saveProduct(){
 function vInventory(){
   const tab=U.sub.inventory||'items';
   const tabs=`<div class="seg" style="margin-bottom:14px">${[['items','Items'],['ledger','Ledger'],['expiring','Expiry']].map(([k,l])=>`<button data-act="sub" data-k="inventory" data-v="${k}" aria-pressed="${tab===k}">${l}</button>`).join('')}</div>`;
-  const acts=`${canAdjust()?`<button class="btn" data-act="count">${ic('clip')}Stock count</button><button class="btn" data-act="newAdjust">${ic('sliders')}Adjustment</button>`:''}${isAdmin()?`<button class="btn primary" data-act="newItem">${ic('plus')}Add item</button>`:''}`;
+  const acts=`${isAdmin()?`<button class="btn" data-act="importData">${ic('dl')}Import</button>`:''}${canAdjust()?`<button class="btn" data-act="count">${ic('clip')}Stock count</button><button class="btn" data-act="newAdjust">${ic('sliders')}Adjustment</button>`:''}${isAdmin()?`<button class="btn primary" data-act="newItem">${ic('plus')}Add item</button>`:''}`;
   let body='';
   if(tab==='items'){
     const f=U.f.inventory||'all', q=qOf('inventory');
@@ -1702,7 +1703,7 @@ function vSettings(){
     body=`<div class="tb">${searchBox('audit','Search the audit log')}</div>${tableHTML([{h:'When',v:e=>fdt(e.t)},{h:'Who',v:e=>esc(personName(e.u))+` <span class="sub">${esc(e.role||'')}</span>`},{h:'Action',v:e=>`<span class="chip c-rest">${esc(e.action)}</span>`},{h:'Details',cls:'wrapc',v:e=>esc(e.summary)}], list.slice(0,400),{empty:'<h3>No activity yet</h3>'})}`;
   }
   if(tab==='data') body=installCard()+`<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Backup</h3></div><p class="small muted" style="margin-bottom:12px">${S.mode==='db'?'Your data is stored in your Claude account and synced for everyone you share the app with.':'Data is saved in this browser only.'} Download a full backup now and then.</p>
-    <div class="row wr" style="gap:8px"><button class="btn" data-act="backup">${ic('dl')}Download backup (.json)</button>${isAdmin()?`<button class="btn" data-act="restore">Restore from backup</button>`:''}</div>
+    <div class="row wr" style="gap:8px"><button class="btn" data-act="backup">${ic('dl')}Download backup (.json)</button>${isAdmin()?`<button class="btn" data-act="restore">Restore from backup</button><button class="btn primary" data-act="importData">${ic('dl')}Import from Excel / CSV</button>`:''}</div>
     <p class="hint">Moving to another device or the installed app? Download a backup here, then use “Restore from backup” there.</p></div>
     <div class="card"><div class="card-h"><h3>How your data is organised</h3></div><p class="small" style="margin-bottom:8px">Separate linked records: inventory items, products with their components, inventory transactions, purchases and their lines, orders with their items and payments, expenses, customers, suppliers, and an audit log.</p>
     <p class="small muted">Stock quantity is never stored. It’s calculated from inventory transactions, so it can’t drift out of sync. Financial records are voided, never deleted.</p>
@@ -1801,11 +1802,380 @@ document.addEventListener('change',e=>{ const t=e.target;
   if(t.id==='ledItem'){ U.f.ledgerItem=t.value; render(); } if(t.id==='ledType'){ U.f.ledgerType=t.value; render(); }
   if(t.dataset.w==='qty' && W){ W._same=true; wizRender(); }
 });
+</script>
+<script>
+/* =================== EXCEL / CSV IMPORT =================== */
+const nh = h => String(h??'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const IMP = {
+  inventory:{label:'Inventory', order:3, f:{
+    name:['item','itemname','name','description','inventoryitem','component'], sku:['sku','code','itemcode'], type:['type','itemtype'], category:['category'],
+    unit:['unit','uom'], cost:['costperunit','unitcost','cost','price','amount','costeach'], qty:['qtyonhand','quantityonhand','qtyremaining','onhand','qty','quantity','stock','remaining'],
+    reorder:['reorderlevel','reorderat','lowstockat','minimum','minstock'], reorderQty:['reorderqty','reorderquantity'], supplier:['supplier','vendor'],
+    lot:['lotbatchno','lotno','batchno','lot','batch','lotbatch'], exp:['expirationdate','expirydate','expiration','expiry','exp','expires'], sell:['sellingprice','sellprice','srp','retailprice'], notes:['notes','remarks','note']}},
+  products:{label:'Products & Kits', order:4, f:{
+    name:['productname','product','kit','kitname','name'], type:['producttype','type'], sku:['sku','code'], price:['sellingprice','directprice','directclientprice','price','srp'],
+    reseller:['resellerprice','reseller'], extra:['extracostperunit','extracost','adminfee'], component:['componentitem','component','inventoryitem','item','ingredient'],
+    cqty:['componentqty','qtyperunit','qty','quantity'], description:['description','notes']}},
+  purchases:{label:'Purchases', order:5, f:{
+    date:['date','purchasedate'], name:['description','item','itemname','product'], qty:['quantity','qty'], unitCost:['unitcost','amount','costperunit','cost','price'],
+    total:['total','totalcost','linetotal'], category:['category','type'], supplier:['supplier','vendor'], lot:['lotbatchno','lotno','batchno','lot','batch'],
+    exp:['expirationdate','expirydate','expiration','expiry','exp'], payStatus:['paymentstatus','paid'], method:['paymentmethod','method'], notes:['notes','remarks']}},
+  orders:{label:'Orders', order:7, f:{
+    date:['date','orderdate'], orderNo:['orderno','ordernumber','orderid','order','no'], customer:['customer','customername','client','buyer'],
+    product:['product','productname','description','item'], qty:['quantity','qty'], price:['sellingprice','amountsellingprice','unitprice','price','amount'],
+    total:['total'], discount:['discount'], shipping:['shippingfee','shipping','shippingcharged'], method:['paymentmethod','method'],
+    payStatus:['paymentstatus','paid'], status:['orderstatus','status'], notes:['remarks','notes']}},
+  expenses:{label:'Expenses', order:6, f:{
+    date:['date'], description:['description','expense','item','name'], category:['category'], amount:['amount','total','cost'],
+    method:['paymentmethod','method'], vendor:['vendor','payee','supplier'], notes:['notes','remarks']}},
+  customers:{label:'Customers', order:2, f:{
+    name:['customername','customer','client','name'], type:['pricetype','type','customertype'], phone:['contactnumber','phone','mobile','contact','number'],
+    email:['email'], address:['address'], notes:['notes']}},
+  suppliers:{label:'Suppliers', order:1, f:{
+    name:['suppliername','supplier','name'], person:['contactperson','person'], contact:['contactinfo','contact','phone','email'], notes:['notes']}},
+};
+const IMP_SHEETNAME = [[/supplier/,'suppliers'],[/customer|client/,'customers'],[/purchase/,'purchases'],[/expense/,'expenses'],[/order|sale/,'orders'],[/product|kit|recipe|costing/,'products'],[/inventor|suppl(y|ies)|stock/,'inventory']];
+function impHeaderMap(kind, headers){
+  const map={}, used=new Set(), H=headers.map(nh);
+  for(const [key,syn] of Object.entries(IMP[kind].f)){
+    for(const s of syn){ const i=H.findIndex((h,j)=>h===s && !used.has(j)); if(i>=0){ map[key]=i; used.add(i); break; } }
+  }
+  return map;
+}
+function impScore(kind, headers){ const m=impHeaderMap(kind,headers); return Object.keys(m).length + (m.name!==undefined||m.product!==undefined||m.description!==undefined?1:0); }
+function impDetect(sheetName, headers){
+  const n=sheetName.toLowerCase();
+  for(const [re,k] of IMP_SHEETNAME) if(re.test(n)) return k;
+  let best='skip', bs=1; for(const k in IMP){ const s=impScore(k,headers); if(s>bs){ bs=s; best=k; } } return best;
+}
+function impNum(v){ if(v===''||v==null) return null; if(typeof v==='number') return v; const s=String(v).replace(/[₱$,\s]/g,'').replace(/^\((.*)\)$/,'-$1'); const n=parseFloat(s); return isFinite(n)?n:null; }
+function impDate(v){
+  if(v===''||v==null) return '';
+  if(v instanceof Date && !isNaN(v)){ const t=new Date(v.getTime()+12*3600e3); return t.getUTCFullYear()+'-'+String(t.getUTCMonth()+1).padStart(2,'0')+'-'+String(t.getUTCDate()).padStart(2,'0'); }
+  if(typeof v==='number' && v>20000 && v<80000){ const t=new Date(Math.round((v-25569)*864e5)); return isoD(new Date(t.getUTCFullYear(),t.getUTCMonth(),t.getUTCDate())); }
+  const s=String(v).trim();
+  let m=s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/); if(m) return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+  m=s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/);
+  if(m){ let a=+m[1], b=+m[2], y=+m[3]; if(y<100) y+=2000; let mo=a, d=b; if(a>12){ d=a; mo=b; } if(mo<1||mo>12||d<1||d>31) return ''; return y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0'); }
+  if(/^\d{5}(\.\d+)?$/.test(s)){ const d=new Date(Math.round((+s-25569)*864e5)); return isoD(new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())); }
+  const t=Date.parse(s); return isNaN(t)?'':isoD(new Date(t));
+}
+function impInferType(name, hint){
+  const n=String(name).toLowerCase();
+  if(/bac.?water|bacteriostatic|\bbac\d|pharmabac/.test(n)) return 'Bacwater';
+  if(/syringe|needle/.test(n)) return 'Syringe';
+  if(/box|bag|pouch|sticker|tape|bubble|foil|carton|mailer|label|wrap|cap\b|vial cap/.test(n)) return 'Packaging';
+  if(/swab|alcohol|spray|glove/.test(n)) return 'Supplies';
+  if(/acetic|acid\b|saline|sterile water/.test(n)) return 'Other';
+  if(hint==='supply') return 'Supplies';
+  if(/\d+\s?mg|tirz|sema|reta|cagri|aod|ss-?31|bpc|tb-?500|ghk|mots|nad|peptide|amino|gtt/.test(n)) return 'Peptide';
+  return hint==='inventory'?'Peptide':'Other';
+}
+const IMP_TYPES_LC = Object.fromEntries(ITEM_TYPES.map(t=>[t.toLowerCase(),t]));
+const IMP_PTYPES = s => { const n=nh(s); if(/kit|set/.test(n)) return 'Set / Kit'; if(/water|bac/.test(n)) return 'Vial + Water'; if(/vial/.test(n)) return 'Vial Only'; if(/addon/.test(n)) return 'Add-on'; if(/supply/.test(n)) return 'Supply'; return PROD_TYPES.find(t=>nh(t)===n)||''; };
+const IMP_PAY = s => { const n=nh(s); if(!n) return ''; if(/partial/.test(n)) return 'Partially Paid'; if(/refund/.test(n)) return 'Refunded'; if(/unpaid|notpaid|due|no$/.test(n)) return 'Unpaid'; if(/paid|yes|done/.test(n)) return 'Paid'; return ''; };
+const IMP_STATUS = s => ORDER_STATUS.find(x=>nh(x)===nh(s)) || (nh(s)==='done'||nh(s)==='delivered'?'Completed':'');
+const IMP_FEE = /^(admin|shipping|courier|delivery|service|handling|customs)?\s*fees?$|^shipping$|^admin fee|^shipping fee/i;
+const IMP_SKIP = /delete this row/i;
+
+let IM=null;
+async function impReadFiles(files){
+  await loadXLSX();
+  const sheets=[];
+  for(const file of files){
+    const isCsv=/\.(csv|txt|tsv)$/i.test(file.name);
+    let wb;
+    if(isCsv){ const text=await file.text(); wb=XLSX.read(text,{type:'string', raw:true}); }
+    else { const buf=await file.arrayBuffer(); wb=XLSX.read(buf,{type:'array', cellDates:true}); }
+    for(const sn of wb.SheetNames){
+      if(/read ?me|instruction|guide/i.test(sn)) continue;
+      // Excel: read stored values (full decimals, real dates). CSV: keep the text exactly as written.
+      const aoa=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1, raw:!isCsv, defval:'', blankrows:false});
+      if(!aoa.length) continue;
+      // header = first of the first 6 rows with >=2 recognised column names
+      let hi=0, best=-1;
+      for(let i=0;i<Math.min(6,aoa.length);i++){ const known=aoa[i].filter(h=>{ const n=nh(String(h)); return n && Object.values(IMP).some(k=>Object.values(k.f).some(s=>s.includes(n))); }).length; if(known>best){ best=known; hi=i; } }
+      const headers=aoa[hi].map(h=>String(h).trim());
+      const rows=aoa.slice(hi+1).filter(r=>r.some(c=>String(c??'').trim()!=='') && !r.some(c=>IMP_SKIP.test(String(c??''))));
+      const name=isCsv?file.name.replace(/\.[^.]+$/,''):sn;
+      sheets.push({file:file.name, sheet:sn, name, headers, rows, kind:impDetect(isCsv?file.name:sn, headers)});
+    }
+  }
+  return sheets;
+}
+function impRows(sh){
+  const m=impHeaderMap(sh.kind, sh.headers);
+  const keepRaw=new Set(['cost','qty','reorder','reorderQty','sell','price','reseller','extra','cqty','unitCost','total','discount','shipping','amount','date','exp']);
+  return sh.rows.map((r,i)=>{ const o={_row:i+2}; for(const k in m){ const v=r[m[k]]; o[k]= keepRaw.has(k) && (typeof v==='number' || v instanceof Date) ? v : String(v??'').trim(); } return o; });
+}
+
+/* build a plan (no writes) */
+function impPlan(sheets, opt){
+  const P={suppliers:[],customers:[],items:[],itemUpd:[],products:[],productUpd:[],movements:[],purchases:[],expenses:[],orders:[],warn:[],skipDup:0,counts:{}};
+  const key=s=>nh(s);
+  const itemsBy=new Map(all('items').map(i=>[key(i.name),i])), prodBy=new Map(all('products').map(p=>[key(p.name),p]));
+  const custBy=new Map(all('customers').map(c=>[key(c.name),c])), supBy=new Map(all('suppliers').map(s=>[key(s.name),s]));
+  const T=today(), now=Date.now(); let seq=0; const created=()=>now+(seq++);
+  const supId=name=>{ if(!name) return ''; const k=key(name); if(supBy.has(k)) return supBy.get(k).id; const s={id:uid('s_'),name:name.trim(),contactPerson:'',contact:'',notes:'',created:created()}; supBy.set(k,s); P.suppliers.push(s); return s.id; };
+  const tidy=n=>{ n=String(n||'').trim(); return n.length>1 && n===n.toUpperCase() && /[A-Z]/.test(n) ? n.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()) : n; };
+  const custId=(name,type)=>{ if(!name) return ''; name=tidy(name); const k=key(name); if(custBy.has(k)) return custBy.get(k).id; const c={id:uid('c_'),name:name.trim(),type:type||'Direct',phone:'',email:'',address:'',notes:'',created:created()}; custBy.set(k,c); P.customers.push(c); return c.id; };
+  // codes like T15 / BAC3 / Cag5 match full names like “Tirz 15mg” / “Bacwater 3ml” / “Cagrilintide 5mg”
+  const isCode=n=>/^[A-Za-z0-9.\-]{1,10}$/.test(String(n).trim()) && /\d/.test(n) && /[a-z]/i.test(n);
+  const parts=n=>{ const L=String(n).replace(/[^a-z]/gi,'').toLowerCase(); const m=String(n).match(/(\d+(?:\.\d+)?)\s*(mg|ml|mcg|iu|g)\b/i)||String(n).match(/(\d+(?:\.\d+)?)/); return {L, num:m?m[1]:''}; };
+  const codeFits=(code,full)=>{ if(!isCode(code)||isCode(full)||!/\s/.test(String(full).trim())) return false; const c=parts(code), f=parts(full); return c.L.length>0 && c.num && c.num===f.num && f.L.startsWith(c.L); };
+  P.info=[];
+  const findItem=(name,rename)=>{ const k=key(name); let it=itemsBy.get(k)||null;
+    if(!it){ const seen=new Set(), hits=[]; for(const x of itemsBy.values()){ if(seen.has(x)) continue; seen.add(x); if(codeFits(x.name,name)||codeFits(name,x.name)||(x.sku&&key(x.sku)===k)) hits.push(x); } if(hits.length===1) it=hits[0]; }
+    if(it && rename && key(it.name)!==k && P.items.includes(it) && isCode(it.name) && codeFits(it.name,name)){ P.info.push(`“${it.name}” was matched to “${name.trim()}” — saved with that name and SKU ${it.sku||it.name}.`); it.sku=it.sku||it.name; it.name=name.trim(); itemsBy.set(k,it); it.type=impInferType(it.name, it.type==='Supplies'?'supply':'inventory'); }
+    return it; };
+  const newItem=(name,hint,extra={})=>{ const t=impInferType(name,hint); const it={id:uid('i_'),name:name.trim(),sku:'',type:t,category:'',unit:t==='Peptide'||t==='Bacwater'?'vial':'pc',defaultCost:0,sellPrice:0,supplierId:'',reorderLevel:0,reorderQty:0,status:'active',notes:'',created:created(),...extra}; itemsBy.set(key(name),it); P.items.push(it); return it; };
+  const byKind=k=>sheets.filter(s=>s.kind===k).flatMap(s=>impRows(s).map(r=>({...r,_sheet:s.name})));
+  const at=(r)=>`${r._sheet} row ${r._row}`;
+
+  // suppliers
+  for(const r of byKind('suppliers')){ if(!r.name) continue; const k=key(r.name); if(supBy.has(k)){ continue; } const s={id:uid('s_'),name:r.name,contactPerson:r.person||'',contact:r.contact||'',notes:r.notes||'',created:created()}; supBy.set(k,s); P.suppliers.push(s); }
+  // customers (only commercial fields are read)
+  for(const r of byKind('customers')){ if(!r.name) continue; const k=key(r.name); if(custBy.has(k)) continue; const c={id:uid('c_'),name:tidy(r.name),type:/resell/i.test(r.type)?'Reseller':'Direct',phone:r.phone||'',email:r.email||'',address:r.address||'',notes:r.notes||'',created:created()}; custBy.set(k,c); P.customers.push(c); }
+  // inventory
+  const invSheets=sheets.filter(s=>s.kind==='inventory');
+  for(const sh of invSheets){ const hint=/suppl/i.test(sh.name)?'supply':'inventory';
+    for(const r of impRows(sh)){ if(!r.name){ continue; }
+      const k=key(r.name), cost=impNum(r.cost), qty=impNum(r.qty);
+      const type=IMP_TYPES_LC[String(r.type||'').toLowerCase()] || null;
+      let it=findItem(r.name), isNew=false;
+      if(!it){ it=newItem(r.name,hint); isNew=true; }
+      const patch={};
+      if(type) patch.type=type; if(r.sku) patch.sku=r.sku; if(r.category) patch.category=r.category; if(r.unit) patch.unit=r.unit.toLowerCase();
+      if(cost!=null) patch.defaultCost=cost; if(impNum(r.reorder)!=null) patch.reorderLevel=impNum(r.reorder); if(impNum(r.reorderQty)!=null) patch.reorderQty=impNum(r.reorderQty);
+      if(impNum(r.sell)!=null) patch.sellPrice=impNum(r.sell); if(r.notes) patch.notes=r.notes; if(r.supplier) patch.supplierId=supId(r.supplier);
+      if(!isNew) for(const pk of Object.keys(patch)) if(String(it[pk]??'')===String(patch[pk]??'')) delete patch[pk];
+      if(isNew) Object.assign(it,patch); else if(Object.keys(patch).length){ const u=P.itemUpd.find(x=>x.id===it.id); if(u) Object.assign(u.patch,patch); else P.itemUpd.push({id:it.id,name:it.name,patch}); }
+      if(qty!=null){
+        const cur = isNew ? 0 : stOf(it.id).qty, d=r4(qty-cur);
+        const uc = cost!=null?cost:(isNew?0:stOf(it.id).avg);
+        if(isNew && qty) P.movements.push(mkMovement('opening', T, [{itemId:it.id, qty, unitCost:uc, lot:r.lot||'', exp:impDate(r.exp)}], {note:'Opening balance from '+sh.name+' (import)', created:created()}));
+        else if(!isNew && Math.abs(d)>1e-9) P.movements.push(mkMovement('adjustment', T, [{itemId:it.id, qty:d, unitCost:uc}], {reason:'Manual correction', note:'Quantity set from '+sh.name+' (import)', created:created()}));
+      }
+    }
+  }
+  // products (long format: one row per component, product name can be left blank on following rows)
+  let lastP=null; const prodRows=new Map();
+  for(const r of byKind('products')){ const nm=r.name||lastP; if(!nm) continue; lastP=nm; if(!prodRows.has(key(nm))) prodRows.set(key(nm),{name:nm,rows:[]}); prodRows.get(key(nm)).rows.push(r); }
+  for(const {name,rows} of prodRows.values()){
+    const head=rows.find(r=>r.price||r.type||r.sku||r.reseller||r.extra)||rows[0];
+    const comps=[]; for(const r of rows){ if(!r.component) continue; let it=findItem(r.component); if(!it){ it=newItem(r.component,'supply'); P.warn.push(`“${r.component}” (${at(r)}) wasn’t in your inventory, so it was added with no stock and no cost.`); } const q=impNum(r.cqty); comps.push({itemId:it.id, qty:q!=null?q:1}); }
+    const d={}; if(impNum(head.price)!=null) d.price=impNum(head.price); if(impNum(head.reseller)!=null) d.resellerPrice=impNum(head.reseller); if(impNum(head.extra)!=null) d.extraCost=impNum(head.extra);
+    if(head.type&&IMP_PTYPES(head.type)) d.type=IMP_PTYPES(head.type); if(head.sku) d.sku=head.sku; if(head.description) d.description=head.description;
+    if(comps.length){ const merged={}; for(const c of comps) merged[c.itemId]=r4((merged[c.itemId]||0)+c.qty); d.components=Object.entries(merged).map(([itemId,qty])=>({itemId,qty})); }
+    const ex=prodBy.get(key(name));
+    if(ex){ for(const pk of Object.keys(d)) if(JSON.stringify(ex[pk]??'')===JSON.stringify(d[pk]??'')) delete d[pk]; if(Object.keys(d).length) P.productUpd.push({id:ex.id,name:ex.name,patch:d}); }
+    else { const p={id:uid('p_'),name:name.trim(),sku:'',type:/set|kit/i.test(name)?'Set / Kit':/water|bac/i.test(name)?'Vial + Water':/vial/i.test(name)?'Vial Only':'Custom',description:'',price:0,resellerPrice:0,extraCost:0,components:[],status:'active',created:created(),...d}; prodBy.set(key(name),p); P.products.push(p); }
+  }
+  // purchases (+ fees and expense rows found in a combined Purchases/Expense sheet)
+  const expCats=cfg().expenseCategories.map(c=>c.toLowerCase());
+  const existingPL=new Set(); for(const p of all('purchases').filter(p=>!p.voided)) for(const l of p.lines) existingPL.add([p.date,key(get('items',l.itemId)?.name||l.name),r2(l.qty),r2(l.unitCost)].join('|'));
+  const groups=new Map();
+  for(const r of byKind('purchases')){
+    if(!r.name) continue;
+    const date=impDate(r.date)||T, qty=impNum(r.qty), total=impNum(r.total); let uc=impNum(r.unitCost);
+    const cat=String(r.category||'').toLowerCase().trim();
+    if(IMP_FEE.test(r.name.trim()) || cat==='fee' || cat==='fees'){ const amt=total!=null?total:(uc||0)*(qty||1); const g=impGroup(groups,date,r.supplier); g.fees+=amt; continue; }
+    const isExpense = cat==='expense' || cat==='expenses' || (cat && !['inventory','supply','supplies','stock'].includes(cat) && expCats.includes(cat));
+    if(isExpense){ P._expRows=(P._expRows||[]).concat({...r, date, amount:total!=null?total:(uc||0)*(qty||1)}); continue; }
+    if(!(qty>0)){ P.warn.push(`Skipped ${at(r)}: “${r.name}” has no quantity.`); continue; }
+    if(total!=null && total>0) uc=total/qty; if(uc==null) uc=0; uc=Math.round(uc*1e6)/1e6;   // the line total is what was actually paid
+    const dupKey=[date,key(r.name),r2(qty),r2(uc)].join('|'); if(existingPL.has(dupKey)){ P.skipDup++; continue; } existingPL.add(dupKey);
+    let it=findItem(r.name,true);
+    if(!it && opt.addStock) it=newItem(r.name, cat.startsWith('suppl')?'supply':'inventory', {defaultCost:r4(uc)});
+    if(it && !it.defaultCost && P.items.includes(it)) it.defaultCost=r4(uc);
+    const g=impGroup(groups,date,r.supplier); g.lines.push({itemId:it?it.id:'', name:it?it.name:r.name.trim(), qty, unitCost:uc, lot:r.lot||'', exp:impDate(r.exp), note:r.notes||''}); if(r.payStatus) g.pay=IMP_PAY(r.payStatus)||g.pay; if(r.method) g.method=r.method;
+  }
+  let poN=0; const poBase=()=>{ let mx=1000; for(const o of all('purchases')){ const n=parseInt(String(o.no||'').replace(/\D/g,''),10); if(n>mx) mx=n; } return mx; }, pb=poBase();
+  for(const g of [...groups.values()].sort((a,b)=>a.date.localeCompare(b.date))){
+    if(!g.lines.length){ if(g.fees && all('purchases').some(p=>!p.voided && p.date===g.date && Math.abs(num(p.fees)-g.fees)<0.01)){ P.skipDup++; continue; } if(g.fees) P._expRows=(P._expRows||[]).concat({date:g.date,description:'Fees'+(g.supplier?' — '+g.supplier:''),category:'Admin',amount:g.fees,_row:'',_sheet:'Purchases'}); continue; }
+    const supplierId=supId(g.supplier);
+    const p={id:uid('pu_'),no:'PO-'+(pb+(++poN)),date:g.date,supplierId,supplierName:'',lines:g.lines,fees:r2(g.fees),allocFees:true,paymentStatus:g.pay||'Paid',paymentMethod:g.method||'Other',notes:'Imported from file',created:created(),by:S.uid||'local'};
+    const tot=puTotal(p); p.paid=p.paymentStatus==='Paid'?tot:0;
+    if(opt.addStock){ const sub=p.lines.reduce((s,l)=>s+l.qty*l.unitCost,0);
+      const mv=mkMovement('purchase',p.date,p.lines.filter(l=>l.itemId).map(l=>({itemId:l.itemId,qty:l.qty,unitCost:r4(l.unitCost+(sub>0?p.fees*(l.qty*l.unitCost)/sub/l.qty:0)),lot:l.lot,exp:l.exp})),{ref:{col:'purchases',id:p.id},refNo:p.no,supplierId,created:created()});
+      P.movements.push(mv); p.movementId=mv.id; }
+    else { p.imported=true; p.notes='Imported as history (stock not added)'; }
+    P.purchases.push(p);
+  }
+  // items with no cost: use what the purchase rows say they cost
+  for(const mv of P.movements) if(mv.type==='opening') for(const l of mv.lines){ const it=P.items.find(x=>x.id===l.itemId); if(it && !(num(l.unitCost)>0) && it.defaultCost>0) l.unitCost=it.defaultCost; }
+  // expenses
+  const existingE=new Set(all('expenses').filter(e=>!e.voided).map(e=>[e.date,key(e.description),r2(num(e.amount))].join('|')));
+  const catOf=c=>{ const f=cfg().expenseCategories.find(x=>x.toLowerCase()===String(c||'').toLowerCase()); return f||'Miscellaneous'; };
+  for(const r of [...byKind('expenses'), ...(P._expRows||[])]){
+    const desc=r.description||r.name; const amount=r.amount!=null&&typeof r.amount==='number'?r.amount:impNum(r.amount); if(!desc||!(amount>0)) continue;
+    const date=impDate(r.date)||T, k=[date,key(desc),r2(amount)].join('|'); if(existingE.has(k)){ P.skipDup++; continue; } existingE.add(k);
+    const category=catOf(r.category);
+    P.expenses.push({id:uid('e_'),date,description:desc,category,amount:r2(amount),method:r.method||'Other',vendor:r.vendor||'',notes:[r.notes,(r.category&&category==='Miscellaneous'&&!/^misc/i.test(r.category))?'Category in file: '+r.category:''].filter(Boolean).join(' · '),created:created(),by:S.uid||'local'});
+  }
+  delete P._expRows;
+  // orders
+  const existingO=new Set(); for(const o of all('orders').filter(o=>!o.voided)) for(const l of o.items) existingO.add([o.date,key(custName(o)),key(l.name),r2(l.qty),r2(l.price)].join('|'));
+  const oGroups=new Map(); let anon=0;
+  for(const r of byKind('orders')){
+    if(!r.product) continue;
+    const date=impDate(r.date)||T, qty=impNum(r.qty)||1; let price=impNum(r.price); const total=impNum(r.total); if(price==null && total!=null) price=total/qty; if(price==null) price=0;
+    let cust=r.customer; if(!cust && r.notes){ cust=r.notes.split(/[\s,\-–—:]+/)[0]; cust=cust? cust.charAt(0).toUpperCase()+cust.slice(1):''; }
+    const dk=[date,key(cust||'Walk-in'),key(r.product),r2(qty),r2(price)].join('|'); if(existingO.has(dk)){ P.skipDup++; continue; } existingO.add(dk);
+    let p=prodBy.get(key(r.product)) || prodBy.get(key(r.product.replace(/s$/i,'')));
+    if(!p){ p={id:uid('p_'),name:r.product.trim(),sku:'',type:/set|kit/i.test(r.product)?'Set / Kit':'Custom',description:'',price:r2(price),resellerPrice:0,extraCost:0,components:[],status:'active',created:created()}; prodBy.set(key(r.product),p); P.products.push(p); P.warn.push(`Product “${r.product}” (${at(r)}) wasn’t found, so it was created without a recipe. Add its components so COGS is right.`); }
+    const gk=r.orderNo? 'n|'+r.orderNo : 'r|'+(anon++);
+    if(!oGroups.has(gk)) oGroups.set(gk,{date,cust,lines:[],discount:impNum(r.discount)||0,shipping:impNum(r.shipping)||0,method:r.method||'',pay:IMP_PAY(r.payStatus),status:IMP_STATUS(r.status),notes:r.notes||''});
+    oGroups.get(gk).lines.push({p,qty,price:r2(price)});
+  }
+  let soN=0; const sb=(()=>{ let mx=1000; for(const o of all('orders')){ const n=parseInt(String(o.no||'').replace(/\D/g,''),10); if(n>mx) mx=n; } return mx; })();
+  for(const g of [...oGroups.values()].sort((a,b)=>a.date.localeCompare(b.date))){
+    const customerId=custId(g.cust);
+    const o={id:uid('o_'),no:'SO-'+(sb+(++soN)),date:g.date,customerId,customerName:'',items:g.lines.map(l=>({productId:l.p.id,name:l.p.name,qty:l.qty,price:l.price,_p:l.p})),discount:g.discount,shipping:g.shipping,
+      paymentMethod:g.method||'Other',paymentStatus:g.pay||'Paid',payments:[],status:g.status||'Completed',notes:g.notes,created:created(),by:S.uid||'local'};
+    if(!opt.deduct || !CONFIRMED.has(o.status)) o.imported=true;
+    P.orders.push(o);
+  }
+  P.counts={suppliers:P.suppliers.length,customers:P.customers.length,items:P.items.length,itemUpd:P.itemUpd.length,products:P.products.length,productUpd:P.productUpd.length,
+    purchases:P.purchases.length,purchaseLines:P.purchases.reduce((s,p)=>s+p.lines.length,0),expenses:P.expenses.length,orders:P.orders.length,movements:P.movements.length};
+  return P;
+}
+function impGroup(groups,date,supplier){ const k=date+'|'+nh(supplier||''); if(!groups.has(k)) groups.set(k,{date,supplier:(supplier||'').trim(),lines:[],fees:0,pay:'',method:''}); return groups.get(k); }
+
+async function impApply(P, opt){
+  for(const s of P.suppliers) await put('suppliers',s);
+  for(const c of P.customers) await put('customers',c);
+  for(const it of P.items) await put('items',it);
+  for(const u of P.itemUpd) await put('items',{...get('items',u.id),...u.patch});
+  for(const p of P.products) await put('products',p);
+  for(const u of P.productUpd) await put('products',{...get('products',u.id),...u.patch});
+  for(const mv of P.movements) await put('movements',mv);
+  for(const p of P.purchases) await put('purchases',p);
+  for(const e of P.expenses) await put('expenses',e);
+  for(const o0 of P.orders){
+    const o={...o0, items:o0.items.map(({_p,...l})=>({...l, unitCogs:productCost(get('products',l.productId)||_p)}))};
+    const t=oTotal(o); if(o.paymentStatus==='Paid') o.payments=[{id:uid('pay_'),date:o.date,amount:t,method:o.paymentMethod}];
+    if(!o.imported) await deductOrder(o,o.date);
+    await put('orders',o);
+  }
+  const c=P.counts;
+  await audit('import','settings','main',`Imported file: ${c.items} new items, ${c.itemUpd} updated, ${c.products} products, ${c.purchases} purchases, ${c.orders} orders, ${c.expenses} expenses, ${c.customers} customers${P.skipDup?`, ${P.skipDup} duplicates skipped`:''}`);
+}
+
+/* ---------- UI ---------- */
+function importModal(){
+  if(!isAdmin()){ toast('Only admins can import data.'); return; }
+  IM={sheets:[], addStock:null, deduct:false, busy:false};
+  impRender();
+}
+function impRender(){
+  let body;
+  if(!IM.sheets.length){
+    body=`<div class="hlp">Upload an Excel (.xlsx) or CSV file. Shopepteez reads each sheet, works out whether it’s inventory, products, purchases, orders, expenses, customers or suppliers, and shows you a preview before anything is saved.</div>
+    <label id="impDrop" style="display:flex;flex-direction:column;align-items:center;gap:10px;border:2px dashed var(--pink-200);border-radius:22px;padding:34px 16px;text-align:center;cursor:pointer;background:var(--surface)">
+      <span style="width:52px;height:52px;border-radius:16px;background:var(--pink-100);color:var(--pink-600);display:grid;place-items:center">${ic('dl')}</span>
+      <b style="font-weight:600;font-size:16px">Choose files or drop them here</b><span class="small muted">.xlsx, .xls or .csv · you can pick several at once</span>
+      <span class="btn primary" style="margin-top:4px">Choose files</span></label>
+    <div class="card" style="margin-top:14px;box-shadow:none"><div class="card-h"><h3>Need a starting point?</h3></div>
+      <p class="small muted" style="margin-bottom:10px">The template has one sheet per type of data, with the right column names and an example row in each. Your existing Google Sheets work too: Purchases/Expense, Inventory, Supplies, Orders and Client tabs are recognised.</p>
+      <button class="btn" data-act="impTemplate">${ic('dl')}Download template (.xlsx)</button></div>`;
+  } else {
+    const hasInvQty=IM.sheets.some(s=>s.kind==='inventory' && impHeaderMap('inventory',s.headers).qty!==undefined);
+    if(IM.addStock===null) IM.addStock=!hasInvQty;
+    const P=impPlan(IM.sheets,{addStock:IM.addStock, deduct:IM.deduct}); IM.plan=P; const c=P.counts;
+    const kinds=[['skip','Skip this sheet'],...Object.entries(IMP).sort((a,b)=>a[1].order-b[1].order).map(([k,v])=>[k,v.label])];
+    const hasPur=IM.sheets.some(s=>s.kind==='purchases'), hasOrd=IM.sheets.some(s=>s.kind==='orders');
+    const line=(n,l)=>n?`<div class="row between small" style="padding:5px 0;border-top:1px solid var(--line)"><span>${l}</span><b style="font-weight:600">${n}</b></div>`:'';
+    body=`<h3 style="font-size:16px;margin-bottom:10px">Sheets found</h3>
+    ${IM.sheets.map((s,i)=>{ const m=impHeaderMap(s.kind==='skip'?'inventory':s.kind,s.headers); const cols=s.kind==='skip'?[]:Object.keys(m); return `<div class="card" style="box-shadow:none;margin-bottom:8px;padding:14px 16px">
+      <div class="row between wr"><div><b style="font-weight:600">${esc(s.name)}</b> <span class="small muted">· ${s.rows.length} row${s.rows.length===1?'':'s'}${s.file!==s.name?' · '+esc(s.file):''}</span></div>
+      <label class="f" style="flex-direction:row;align-items:center;gap:8px;white-space:nowrap">Import as<select data-impkind="${i}" style="padding:8px 10px;background:var(--surface2);min-width:160px">${kinds.map(([k,l])=>`<option value="${k}" ${s.kind===k?'selected':''}>${l}</option>`).join('')}</select></label></div>
+      ${s.kind!=='skip'?`<p class="xs muted" style="margin-top:6px">Columns used: ${cols.length?cols.map(k=>esc(s.headers[m[k]])).join(', '):'<span style="color:var(--bad)">none recognised — check the header row</span>'}</p>`:''}
+      ${s.kind==='customers'&&s.headers.some(h=>/dose|shot|peptide/i.test(h))?`<p class="xs muted" style="margin-top:4px">Only name and contact details are imported. Dose and shot columns are ignored.</p>`:''}</div>`; }).join('')}
+    ${hasPur?`<div class="card" style="box-shadow:none;margin:12px 0 8px"><label class="cb"><input type="checkbox" id="impAdd" ${IM.addStock?'checked':''}><span>Add purchased quantities to stock<br><span class="xs muted">${hasInvQty?'Leave this off: your Inventory sheet already has current quantities, so these purchases are saved as history only.':'Turn off if these purchases are already counted in your current stock.'}</span></span></label></div>`:''}
+    ${hasOrd?`<div class="card" style="box-shadow:none;margin-bottom:8px"><label class="cb"><input type="checkbox" id="impDed" ${IM.deduct?'checked':''}><span>Deduct inventory for these orders<br><span class="xs muted">Leave off for past orders that already came out of your stock counts.</span></span></label></div>`:''}
+    <h3 style="font-size:16px;margin:16px 0 6px">What will be saved</h3>
+    <div class="card" style="box-shadow:none">${line(c.items,'New inventory items')}${line(c.itemUpd,'Inventory items updated')}${line(c.movements,'Stock transactions (opening balances, purchases, corrections)')}${line(c.products,'New products')}${line(c.productUpd,'Products updated')}${line(c.purchases?c.purchases+' ('+c.purchaseLines+' lines)':0,'Purchases')}${line(c.orders,'Orders')}${line(c.expenses,'Expenses')}${line(c.customers,'New customers')}${line(c.suppliers,'New suppliers')}
+      ${!Object.values(c).some(Boolean)?'<p class="small muted">Nothing new to import.</p>':''}</div>
+    ${P.skipDup?`<div class="banner info" style="margin-top:10px">${P.skipDup} row${P.skipDup>1?'s':''} already in Shopepteez will be skipped, so nothing is duplicated.</div>`:''}
+    ${P.info.length?`<div class="banner info" style="margin-top:10px"><b>Matched by code</b><br>${P.info.slice(0,8).map(esc).join('<br>')}${P.info.length>8?`<br>…and ${P.info.length-8} more`:''}</div>`:''}
+    ${P.warn.length?`<div class="banner" style="margin-top:10px"><b>Check after importing</b><br>${P.warn.slice(0,8).map(esc).join('<br>')}${P.warn.length>8?`<br>…and ${P.warn.length-8} more`:''}</div>`:''}
+    <p class="hint" style="margin-top:10px">Tip: <a href="#" data-act="backup">download a backup</a> first if you already have data in the app.</p>`;
+  }
+  const foot = IM.sheets.length
+    ? `<button class="btn" data-act="impReset">Choose other files</button><div class="rt"><button class="btn primary" data-act="impDo" ${IM.busy?'disabled':''}>${IM.busy?'Importing…':'Import now'}</button></div>`
+    : `<div class="rt"><button class="btn" data-act="close">Close</button></div>`;
+  openModal('Import from Excel or CSV', body, foot, 'wide');
+  const drop=$('#impDrop');
+  if(drop){
+    drop.addEventListener('click',e=>{ e.preventDefault(); impPick(); });
+    ['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.style.borderColor='var(--pink)'; }));
+    drop.addEventListener('dragleave',()=>drop.style.borderColor='');
+    drop.addEventListener('drop',e=>{ e.preventDefault(); drop.style.borderColor=''; impLoad([...e.dataTransfer.files]); });
+  }
+  $$('[data-impkind]').forEach(sel=>sel.addEventListener('change',()=>{ IM.sheets[+sel.dataset.impkind].kind=sel.value; IM.addStock=null; impRender(); }));
+  const a=$('#impAdd'); if(a) a.addEventListener('change',()=>{ IM.addStock=a.checked; impRender(); });
+  const d=$('#impDed'); if(d) d.addEventListener('change',()=>{ IM.deduct=d.checked; impRender(); });
+}
+function impPick(){ const fi=$('#fileIn'); fi.accept='.xlsx,.xls,.csv,.tsv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv'; fi.multiple=true; fi.onchange=()=>{ const f=[...fi.files]; fi.value=''; fi.multiple=false; if(f.length) impLoad(f); }; fi.click(); }
+async function impLoad(files){
+  try{ toast('Reading '+files.length+' file'+(files.length>1?'s':'')+'…'); IM.sheets=await impReadFiles(files); IM.addStock=null;
+    if(!IM.sheets.length){ toast('No data found in that file.'); return; } impRender(); }
+  catch(e){ console.warn(e); toast(window.XLSX?'Couldn’t read that file. Is it a valid Excel or CSV file?':'Couldn’t load the Excel reader. Connect to the internet once, then try again.'); }
+}
+async function impDo(){
+  if(IM.busy) return; const P=IM.plan; if(!P || !Object.values(P.counts).some(Boolean)){ toast('Nothing new to import.'); return; }
+  IM.busy=true; impRender();
+  try{ await impApply(P,{}); closeModal(); render(); toast('Import complete'); }
+  catch(e){ console.warn(e); IM.busy=false; impRender(); toast('Import stopped partway. Nothing was duplicated; you can run it again.'); }
+}
+async function impTemplate(){
+  try{ await loadXLSX(); }catch(e){ toast('Couldn’t load the Excel library. Check your connection.'); return; }
+  const X='Example – delete this row';
+  const sheets={
+    'Read me':[['Shopepteez import template'],[],['1. Fill in the sheets you need. You can leave any sheet empty or delete it.'],['2. Delete the example rows (they are skipped anyway).'],['3. In Shopepteez: Settings → Data → Import from Excel/CSV, then choose this file.'],[],
+      ['Inventory','Your components: peptides, bac water, syringes, packaging. “Qty on hand” becomes the opening stock.'],
+      ['Products','What you sell. One row per component. Repeat the product name, or leave it blank on the following rows.'],
+      ['Purchases','Stock you bought. Category: Inventory, Supply, Fee (added to that purchase’s cost) or an expense category.'],
+      ['Orders','Sales. Rows with the same Order no. become one order. Leave Order no. blank for one-line orders.'],
+      ['Expenses','Running costs: shipping, ads, fees.'],
+      ['Customers / Suppliers','Contact details. Customers are created automatically from Orders too.'],[],
+      ['Item types','Peptide, Bacwater, Packaging, Syringe, Supplies, Other'],['Product types','Set / Kit, Vial Only, Vial + Water, Add-on, Supply, Custom'],
+      ['Payment status','Paid, Partially Paid, Unpaid, Refunded'],['Order status','Pending, Processing, Packed, Shipped, Completed, Cancelled, Returned'],['Dates','YYYY-MM-DD or M-D-YYYY (e.g. 9-18-2026)'],
+      [],['Re-importing the same file is safe: rows already in Shopepteez are skipped.']],
+    'Inventory':[['Item name','SKU','Type','Unit','Cost per unit','Qty on hand','Reorder level','Reorder qty','Supplier','Lot / batch no.','Expiration date','Selling price','Notes'],
+      ['Tirz 15mg','T15','Peptide','vial',359,20,5,10,'','','','',X],['Bacwater 3ml','BAC3','Bacwater','vial',41,24,5,20,'','','','',X]],
+    'Products':[['Product name','Product type','SKU','Selling price','Reseller price','Extra cost per unit','Component item','Component qty','Description'],
+      ['T15 Set','Set / Kit','T15-SET',1699,1399,20,'Tirz 15mg',1,X],['T15 Set','','','','','','Bacwater 3ml',1,X]],
+    'Purchases':[['Date','Description','Quantity','Unit cost','Total','Category','Supplier','Lot / batch no.','Expiration date','Payment status','Notes'],
+      ['2026-09-03','Tirz 15mg',10,359,3590,'Inventory','','','','Paid',X],['2026-09-05','Admin Fee',1,200,200,'Fee','','','','Paid',X]],
+    'Orders':[['Date','Order no.','Customer','Product','Quantity','Price','Discount','Shipping fee','Payment method','Payment status','Order status','Notes'],
+      ['2026-09-18','','Glenn','T15 Set',1,1399,'','','GCash','Paid','Completed',X]],
+    'Expenses':[['Date','Description','Category','Amount','Payment method','Vendor','Notes'],['2026-09-20','J&T shipping','Shipping',120,'Cash','J&T',X]],
+    'Customers':[['Customer name','Type','Contact number','Email','Address','Notes'],['Glenn','Reseller','','','',X]],
+    'Suppliers':[['Supplier name','Contact person','Contact info','Notes'],['Lab Supplier A','','','',X]],
+  };
+  const wb=XLSX.utils.book_new();
+  for(const [n,aoa] of Object.entries(sheets)){ const ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=aoa[0].map((_,i)=>({wch:n==='Read me'?(i?90:22):Math.max(12,...aoa.map(r=>String(r[i]??'').length+2))})); XLSX.utils.book_append_sheet(wb,ws,n); }
+  await offerFile('shopepteez-import-template.xlsx', XLSX.write(wb,{type:'array',bookType:'xlsx'}));
+}
+Object.assign(A,{ importData:importModal, impTemplate, impDo, impReset:()=>{ IM.sheets=[]; impRender(); } });
 boot();
 </script>
 <script>
 /* PWA: offline support, persistent storage, home-screen shortcuts */
-if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js?v=3',{updateViaCache:'none'}).catch(()=>{})); }
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js?v=3',{updateViaCache:'none'}).then(r=>{ r.update().catch(()=>{}); }).catch(()=>{}));
+  // When a new version takes over, refresh once to show it. Your records are not touched: they stay saved on this device.
+  let hadController=!!navigator.serviceWorker.controller, reloading=false;
+  navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+    if(!hadController){ hadController=true; return; }
+    if(reloading) return;
+    const go=()=>{ reloading=true; try{ sessionStorage.setItem('shopepteez-updated','1'); }catch(e){} location.reload(); };
+    if(document.querySelector('#scrim.open')){ const t=setInterval(()=>{ if(!document.querySelector('#scrim.open')){ clearInterval(t); go(); } },1000); } else go();
+  });
+  try{ if(sessionStorage.getItem('shopepteez-updated')){ sessionStorage.removeItem('shopepteez-updated'); setTimeout(()=>toast('Shopepteez updated · your records are unchanged'),900); } }catch(e){}
+}
 if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
 (function(){ const p=new URLSearchParams(location.search); const v=p.get('view'), a=p.get('action');
   const run=()=>{ if(!S.ready){ return setTimeout(run,150); } if(v && typeof go==='function') go(v); if(a==='newSale') newSale(); };
